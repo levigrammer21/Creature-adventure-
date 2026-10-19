@@ -1,0 +1,49 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> creature-adventure@1.0.0 rules
+> firebase emulators:exec --only firestore --project demo-creature-adventure --config firebase-emulator.json "npm test"
+
+⬢  emulators: firebase-tools will drop support for Java version < 21 soon in firebase-tools@15. Please install a JDK at version 21 or above to get a compatible runtime.
+i  emulators: Starting emulators: firestore
+i  emulators: Detected demo project ID "demo-creature-adventure", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+i  Running script: npm test
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> creature-adventure@1.0.0 test
+> vitest run --maxWorkers=1
+
+
+ RUN  v3.2.7 /workspace/scratch/3b8102b303b2/creature-adventure
+
+stderr | rules.test.ts > Firestore ownership and revision rules > rejects unsigned and cross-account reads/writes
+[2026-10-19T20:34:36.078Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x288e534b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L19, false for 'create' @ L28, false for 'update' @ L25, false for 'update' @ L28
+
+stderr | rules.test.ts > Firestore ownership and revision rules > permits only increasing committed revisions and immutable snapshots
+[2026-10-19T20:34:36.204Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x288e534c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L8:24 for 'update' @ L8, false for 'update' @ L28, false for 'update' @ L8, false for 'update' @ L28
+
+stderr | rules.test.ts > Firestore ownership and revision rules > permits only increasing committed revisions and immutable snapshots
+[2026-10-19T20:34:36.251Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x288e534d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L25, false for 'update' @ L28
+
+ ✓ rules.test.ts (3 tests) 2133ms
+   ✓ Firestore ownership and revision rules > rejects unsigned and cross-account reads/writes  576ms
+   ✓ Firestore ownership and revision rules > round-trips a partitioned account and rejects a stale device without duplicate rewards  694ms
+ ✓ engine.test.ts (34 tests) 589ms
+ ✓ art.test.ts (1 test) 126ms
+ ✓ persistence.test.ts (4 tests) 6ms
+
+ Test Files  4 passed (4)
+      Tests  42 passed (42)
+   Start at  16:34:34
+   Duration  4.02s (transform 174ms, setup 0ms, collect 490ms, tests 2.85s, environment 0ms, prepare 193ms)
+
+✔  Script exited successfully (code 0)
+i  emulators: Shutting down emulators.
+i  firestore: Stopping Firestore Emulator
+i  hub: Stopping emulator hub
+i  logging: Stopping Logging Emulator
+⚠  emulators: firebase-tools will drop support for Java version < 21 soon in firebase-tools@15. Please install a JDK at version 21 or above to get a compatible runtime.

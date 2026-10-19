@@ -1,0 +1,31 @@
+# Requirements and verification ledger — 1.0.0
+
+Updated 19 October 2026. IMPLEMENTED describes delivered functionality. VERIFIED names available evidence; it does not imply every possible combination, device or live account has been tested. All original systems remain in scope; no decorative placeholder features are counted as complete.
+
+| ID | Specification | Delivered behavior and evidence |
+|---|---|---|
+| R01 | 1–2, 42–43 | Flat React/TypeScript source plus compiled Pages-ready PWA, visible 1.0.0, changelog, phone-only setup. Production build and nested-URL package checks pass. GitHub publication is blocked by integration write access. |
+| R02 | 4–8 | All 50 families/150 forms, staged stats/growth, six IVs, exactly five elements, family passives, three abilities, aptitudes and 100 manual evolution edges. Formula/content tests and all-edge identity regression pass. |
+| R03 | 9–11 | Six front/back slots, persistent priorities, timers, cooldowns, statuses, targeting, shields/healing/redirect/counter effects, hitsplats, motion, rewards, recovery/retry. Shared engine and partition equivalence tests; browser combat/refresh checks. |
+| R04 | 12–15 | Eight gathering/production skills plus Slayer; uncapped XP/mastery, 48 gathering activities, 64 ingredient-backed recipes, separate concurrent crew, shared creature XP pool, milestone and diminishing-return bonuses. Conservation, resource exhaustion, workflow and output tests pass. All refined alloys feed later upgrade costs. |
+| R05 | 16 | Exactly one Slayer contract, four kinds, paid reroll, manual retrieval turn-in, XP/tokens/materials, exclusive hunts and shop. Slayer milestone bonuses apply permanently to contracts. Turn-in and slot invariant tests pass. |
+| R06 | 17–18 | Pre-generated stable egg genetics/variants, separate storage, independent incubators, auto-hatch/load/selection, capacity handling, AND/OR release rules including all six individual IV thresholds, previews and protected identities. Genetics/protection and offline automation tests pass. |
+| R07 | 19–20 | Independent color/effect axes, exact base/inherited probabilities, guaranteed complementary six-IV inheritance, repeat breeding, eight existing-family hybrid recipes, parents reserved until completion. Seeded sampling/inheritance/resource tests pass; all nine visuals render in browser. |
+| R08 | 21 | Housing, incubators, hatchery, breeding, recovery, workshop, expedition; escalating costs/time and milestone automation. No designed facility cap. Chronological job processing and persistence exercised. |
+| R09 | 22–25 | Essence/Gem/Trinket, six rarities with exact distinct stat counts, long-tail rolls, uncapped upgrades, 1% success floor, permanent milestones, immutable original salvage value, locks/favorites/comparison/search/filter/bulk management. Invariant tests and 50,000-item benchmark pass. |
+| R10 | 10, 26, 30–32 | 10 regions, 50 wild encounters, 10 bosses, 10 Slayer hunts, 5 dungeons, 3 distinct solo raids, saved nodes, journal, achievements, gold/tokens and shops. Every acquisition path is referenced; all adventures complete across three seeded fixtures and restore identically mid-run. Seven-day earned-only progression separately recorded. |
+| R11 | 27–28 | Queues, conditional resource/cycle workflows, saved loadouts and safe switching, automatic hatching/release/salvage, repeat breeding, repeat limits/stock stops. Shared chronological offline settlement handles consumption, defeat, capacity and 24–72h earning limits. Representative timing/protection/no-loop tests pass. |
+| R12 | 29, 33–34 | Owned collection, encyclopedia, enlarged inspectors for every form, IV/gender/stage/variant/element filters, histories, farm dashboard, progress bars, accessible labels, 320/390/768/1280 layouts. Main browser walkthrough and all 150 inspectors pass. Hardware-specific tests remain a verification limit. |
+| R13 | 35–37 | IndexedDB, email/Google/reset integration, partitioned immutable Firestore generations, revision transactions, clock anchor, account/tab isolation, explicit conflict freeze, exports/imports and preserving schema-1 migration. Emulator tests cover owner isolation, competing saves and large Unicode accounts. Live owner-provider setup/restore remains unverified. |
+| R14 | 38–41 | Actual strict build, engine/persistence/rules/art tests, browser/package checks, seeded balance, seven-day earned progression, adventure/evolution restore suite and inventory benchmark included. Tests use fixtures where explicitly stated; numerical representation and exhaustive balance limits are documented. |
+| R15 | 33, 40 | Owner-approved painted direction implemented in all 150 form illustrations, independent atlas viewports, enlarged previews, variant treatments and offline asset cache. Roster image/header tests and all-form browser checks pass. |
+
+## Owner-confirmed architecture change
+
+The owner explicitly accepted browser-computed gameplay with Firebase cloud saves, no anti-cheat, no Blaze and personal use. Original trusted backend randomness/reward validation is intentionally replaced. No replacement Firebase project, billing upgrade, premium currency or paid service is introduced.
+
+## Deployment and verification boundaries
+
+The deliverable is a full source/static release package. Its production URL has not been published by this session. The connected repository rejected writes with `Resource not accessible by integration`; source and compiled files are provided together for mobile upload. Authentication providers, authorized hostname and Firestore rules still require access to the owner's existing Firebase console. A successful emulator test does not establish successful live-account login or cloud restore.
+
+The release evidence covers representative gameplay and all content identities/evolution edges/adventure paths. It does not claim exhaustive strategy balance, a natural all-collectibles playthrough, every rare combination, every phone's performance, or literally infinite machine precision. These are testing limits, not omitted gameplay menus or promised future systems.

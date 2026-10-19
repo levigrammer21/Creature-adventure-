@@ -1,0 +1,163 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> creature-adventure@1.0.0 browser
+> node --import tsx browser-check.mjs
+
+[
+  {
+    "name": "first tab acquires writer lock",
+    "passed": true
+  },
+  {
+    "name": "starter hatch creates one creature",
+    "passed": true
+  },
+  {
+    "name": "live battle uses player and enemy units",
+    "passed": true
+  },
+  {
+    "name": "refresh restores combat",
+    "passed": true
+  },
+  {
+    "name": "home fits 320px",
+    "passed": true
+  },
+  {
+    "name": "home fits 390px",
+    "passed": true
+  },
+  {
+    "name": "home fits 768px",
+    "passed": true
+  },
+  {
+    "name": "home fits 1280px",
+    "passed": true
+  },
+  {
+    "name": "Combat renders",
+    "passed": true
+  },
+  {
+    "name": "Combat fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Creatures renders",
+    "passed": true
+  },
+  {
+    "name": "Creatures fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Skills renders",
+    "passed": true
+  },
+  {
+    "name": "Skills fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Farm renders",
+    "passed": true
+  },
+  {
+    "name": "Farm fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Equipment renders",
+    "passed": true
+  },
+  {
+    "name": "Equipment fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Slayer renders",
+    "passed": true
+  },
+  {
+    "name": "Slayer fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Collection renders",
+    "passed": true
+  },
+  {
+    "name": "Collection fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Shop renders",
+    "passed": true
+  },
+  {
+    "name": "Shop fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Settings renders",
+    "passed": true
+  },
+  {
+    "name": "Settings fits desktop",
+    "passed": true
+  },
+  {
+    "name": "Home fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Creatures fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Skills fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Farm fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Equipment fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Slayer fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Collection fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Shop fits mobile",
+    "passed": true
+  },
+  {
+    "name": "Settings fits mobile",
+    "passed": true
+  },
+  {
+    "name": "ability priorities shown",
+    "passed": true
+  },
+  {
+    "name": "second tab is read-only",
+    "passed": true
+  },
+  {
+    "name": "closing a read-only tab preserves the newer checkpoint",
+    "passed": true
+  },
+  {
+    "name": "no runtime page errors",
+    "passed": true
+  }
+]
