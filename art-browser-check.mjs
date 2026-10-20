@@ -60,7 +60,7 @@ try {
     });
   }, s);
   await page.reload();
-  await page.locator(".hero").waitFor();
+  await page.locator(".dashboard").waitFor();
   await page
     .locator(".sidebar nav")
     .getByRole("button", { name: "Collection", exact: true })

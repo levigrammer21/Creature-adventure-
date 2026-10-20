@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useId } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Home,
   Swords,
@@ -74,7 +74,18 @@ import {
   HYBRIDS,
 } from "./content";
 import * as E from "./engine";
-import { CREATURE_ART } from "./art";
+import { Sigil } from "./portraits";
+import {
+  Dashboard,
+  CombatScreen,
+  SkillsScreen,
+  ActivityStrip,
+  EquipmentScreen,
+  BreedingOdds,
+  SlayerScreen,
+  TeamDrawer,
+} from "./interface";
+import "./interface.css";
 import {
   watchAuth,
   google,
@@ -145,76 +156,6 @@ function Progress({
           }}
         />
       </div>
-    </div>
-  );
-}
-function Sigil({
-  family,
-  stage = 1,
-  size = "md",
-  color = "Normal",
-  effect = "Normal",
-}: {
-  family: string;
-  stage?: number;
-  size?: string;
-  color?: string;
-  effect?: string;
-}) {
-  const f = FAMILY[family];
-  const art = CREATURE_ART[`${family}-${stage}`];
-  const clipId = useId().replaceAll(":", "");
-  const [x, y, w, h] = art.box;
-  const pad = Math.max(w, h) * 0.055;
-  return (
-    <div
-      role="img"
-      aria-label={`${f.names[stage - 1]}, ${color} color, ${effect} effect`}
-      data-form={`${family}-${stage}`}
-      className={`sigil ${elementClass(f.element)} ${size} ${color.toLowerCase()} ${effect.toLowerCase()}`}
-    >
-      <svg
-        className="creature-art"
-        viewBox={`${x - pad} ${y - pad} ${w + pad * 2} ${h + pad * 2}`}
-        aria-hidden="true"
-      >
-        <defs>
-          <clipPath id={`${clipId}-row`} clipPathUnits="userSpaceOnUse">
-            <path d={art.clip} />
-          </clipPath>
-          <clipPath id={`${clipId}-col`} clipPathUnits="userSpaceOnUse">
-            <path d={art.column} />
-          </clipPath>
-          {color === "Prismatic" && (
-            <filter id={`${clipId}-prism`} colorInterpolationFilters="sRGB">
-              <feColorMatrix type="saturate" values="0" />
-              <feComponentTransfer>
-                <feFuncR
-                  type="table"
-                  tableValues=".06 .24 .25 .08 .12 .8 1 1"
-                />
-                <feFuncG
-                  type="table"
-                  tableValues=".04 .06 .18 .65 .9 .8 .35 1"
-                />
-                <feFuncB type="table" tableValues=".13 .48 .9 1 .5 .2 .25 1" />
-              </feComponentTransfer>
-            </filter>
-          )}
-        </defs>
-        <g clipPath={`url(#${clipId}-row)`}>
-          <g clipPath={`url(#${clipId}-col)`}>
-            <image
-              href={`./${art.atlas}`}
-              width={art.width}
-              height={art.height}
-              filter={
-                color === "Prismatic" ? `url(#${clipId}-prism)` : undefined
-              }
-            />
-          </g>
-        </g>
-      </svg>
     </div>
   );
 }
@@ -693,7 +634,9 @@ export default function App() {
   const game = useGame(),
     { s, act } = game;
   const [page, setPage] = useState("Home"),
-    [more, setMore] = useState(false),
+    [teamEditor, setTeamEditor] = useState<"combat" | "skill" | null>(null),
+    [farmTab, setFarmTab] = useState("Hatchery"),
+    [shopTab, setShopTab] = useState("Supplies"),
     [detail, setDetail] = useState<string | null>(null),
     [formPreview, setFormPreview] = useState<string | null>(null),
     [modal, setModal] = useState<{
@@ -704,30 +647,62 @@ export default function App() {
     [authModal, setAuthModal] = useState(false),
     [query, setQuery] = useState(""),
     [element, setElement] = useState("All"),
-    [skill, setSkill] = useState<Skill>("Woodcutting"),
-    [region, setRegion] = useState(0),
     [collectionFilter, setCollectionFilter] = useState("All"),
     [collectionPage, setCollectionPage] = useState(0),
-    [itemSlot, setItemSlot] = useState("All"),
-    [rarity, setRarity] = useState("All"),
     [sort, setSort] = useState("Newest"),
-    [selectedItems, setSelectedItems] = useState<string[]>([]),
     [selectedCreatures, setSelectedCreatures] = useState<string[]>([]),
     [ruleType, setRuleType] = useState<"release" | "salvage">("release"),
     [showRules, setShowRules] = useState(false),
     [workflows, setWorkflows] = useState(false),
     [creatureFilter, setCreatureFilter] = useState("Any companion"),
     [minIV, setMinIV] = useState(0),
-    [itemSort, setItemSort] = useState("Rarity"),
-    [creaturePage, setCreaturePage] = useState(0),
-    [equipmentPage, setEquipmentPage] = useState(0);
+    [creaturePage, setCreaturePage] = useState(0);
   useEffect(() => {
     setCreaturePage(0);
-    setEquipmentPage(0);
-  }, [query, element, creatureFilter, minIV, sort, itemSlot, rarity, itemSort]);
+  }, [query, element, creatureFilter, minIV, sort]);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      const dialogs = [
+        ...document.querySelectorAll<HTMLElement>('[role="dialog"]'),
+      ];
+      const top = dialogs.at(-1);
+      if (!top) return;
+      const controls = [
+        ...top.querySelectorAll<HTMLElement>(
+          "button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href],summary",
+        ),
+      ].filter((el) => el.getClientRects().length);
+      if (e.key === "Escape") {
+        const close =
+          top.querySelector<HTMLButtonElement>(".modal-close") ||
+          [...top.querySelectorAll<HTMLButtonElement>("button")].find(
+            (b) => b.textContent?.trim() === "Cancel",
+          );
+        close?.click();
+      }
+      if (e.key === "Tab" && controls.length) {
+        const first = controls[0],
+          last = controls.at(-1)!;
+        if (!top.contains(document.activeElement)) {
+          e.preventDefault();
+          first.focus();
+        } else if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, []);
   const go = (name: string) => {
-    setPage(name);
-    setMore(false);
+    const [destination, section] = name.split(":");
+    setPage(destination);
+    if (destination === "Farm" && section) setFarmTab(section);
+    if (destination === "Shop" && section) setShopTab(section);
     setQuery("");
     window.scrollTo({ top: 0 });
   };
@@ -783,26 +758,6 @@ export default function App() {
             ? cname(a).localeCompare(cname(b))
             : b.acquired - a.acquired,
     );
-  const filteredItems = s.items
-    .filter(
-      (i) =>
-        (itemSlot === "All" || i.slot === itemSlot) &&
-        (rarity === "All" || RARITIES[i.rarity] === rarity) &&
-        (i.slot + " " + i.affixes.map((a) => AFFIX_NAMES[a.key]).join(" "))
-          .toLowerCase()
-          .includes(query.toLowerCase()),
-    )
-    .sort((a, b) =>
-      itemSort === "Upgrade level"
-        ? b.level - a.level
-        : itemSort === "Slot"
-          ? a.slot.localeCompare(b.slot)
-          : itemSort === "Original roll total"
-            ? b.affixes
-                .reduce((v, a) => v.add(a.roll), E.D(0))
-                .cmp(a.affixes.reduce((v, a) => v.add(a.roll), E.D(0)))
-            : b.rarity - a.rarity || b.level - a.level,
-    );
   const action = (fn: (s: Save) => void) => () => act(fn);
   const creatureCard = (creature: Creature, compact = false) => {
     const f = FAMILY[creature.family],
@@ -846,37 +801,6 @@ export default function App() {
       </button>
     );
   };
-  const teamSlots = (team: "combat" | "skill") => (
-    <div className={`team-grid ${team === "combat" ? "combat-slots" : ""}`}>
-      {Array.from({ length: 6 }, (_, i) => {
-        const id = team === "combat" ? s.combatTeam[i] : s.skillTeam[i],
-          creature = s.creatures.find((c) => c.id === id);
-        return (
-          <div className="team-slot" key={i}>
-            <small>
-              {team === "combat"
-                ? (i < 3 ? "FRONT " : "BACK ") + ((i % 3) + 1)
-                : "WORKER " + (i + 1)}
-            </small>
-            {creature ? (
-              <button onClick={() => setDetail(creature.id)}>
-                <Sigil family={creature.family} stage={creature.stage} />
-                <strong>{cname(creature)}</strong>
-                <span>Lv {creature.level}</span>
-              </button>
-            ) : (
-              <button onClick={() => go("Creatures")}>
-                <div className="slot-add">
-                  <Plus size={20} />
-                </div>
-                <span>Assign</span>
-              </button>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
   const journals = (
     <div className="journal-list">
       {JOURNAL.map(([id, title, key, target, reward]) => (
@@ -906,7 +830,9 @@ export default function App() {
     </div>
   );
   return (
-    <div className={`app ${!s.settings.motion ? "reduced-motion" : ""}`}>
+    <div
+      className={`app refresh ${!s.settings.motion ? "reduced-motion" : ""}`}
+    >
       <aside className="sidebar">
         <a
           className="brand"
@@ -954,8 +880,9 @@ export default function App() {
       <div className="main-wrap">
         <header className="topbar">
           <div className="breadcrumb">
-            Sanctuary <ChevronRight size={12} />
+            <span className="header-brand">CA</span>
             <strong>{page}</strong>
+            <small className="header-version">v{VERSION}</small>
           </div>
           <div className="top-resources">
             <span className="gold-coin">◈</span>
@@ -972,6 +899,22 @@ export default function App() {
             </button>
           </div>
         </header>
+        <nav className="quick-nav" aria-label="More destinations">
+          {NAV.slice(5).map(([name, Icon]) => (
+            <button
+              key={name}
+              className={page === name ? "active" : ""}
+              aria-current={page === name ? "page" : undefined}
+              onClick={() => go(name)}
+            >
+              <Icon size={16} />
+              <span>{name}</span>
+            </button>
+          ))}
+        </nav>
+        {s.started && page !== "Home" && page !== "Combat" && (
+          <ActivityStrip s={s} go={go} />
+        )}
         {game.error && (
           <div className="notice danger" role="alert">
             <p>{game.error}</p>
@@ -1027,30 +970,28 @@ export default function App() {
             <p>Resolving your sanctuary’s activities in order.</p>
           </div>
         )}
-        <main>
+        <main className={`${page.toLowerCase()}-page`}>
           <div className="page-title">
             <div className="eyebrow">
               {page === "Home"
                 ? "MAKE A HOME. BUILD A LEGACY."
                 : "CREATURE ADVENTURE"}
             </div>
-            <h1>
-              {page === "Home"
-                ? "A little wild. A world of possibility."
-                : page}
-            </h1>
+            <h1>{page === "Home" ? "Your sanctuary" : page}</h1>
             <p>
               {
                 (
                   {
-                    Home: "Your companions are growing. Your next adventure is waiting.",
+                    Home: "Your active teams, ready eggs and next step.",
                     Combat:
-                      "Choose your formation. Find your rhythm. Let your team take the field.",
-                    Creatures: "Every companion has a place in your story.",
-                    Skills: "Patient work becomes extraordinary progress.",
-                    Farm: "A sanctuary built one good decision at a time.",
+                      "Your team fights automatically. Choose a hunt or watch the battle.",
+                    Creatures:
+                      "Tap a companion to inspect it. Edit either team directly.",
+                    Skills:
+                      "Choose one activity. Your work crew runs it automatically.",
+                    Farm: "Hatch eggs, breed companions and upgrade your buildings.",
                     Equipment:
-                      "Find the roll worth keeping. Forge it into something remarkable.",
+                      "Tap an item to equip, compare or upgrade. Select spares to salvage.",
                     Slayer: "One contract. A worthy hunt.",
                     Collection:
                       "Fifty families. A hundred and fifty forms. A lifetime of discoveries.",
@@ -1100,618 +1041,39 @@ export default function App() {
           ) : (
             <>
               {page === "Home" && (
-                <>
-                  <div className="dashboard-grid">
-                    <div className="hero panel">
-                      <div className="hero-scene">
-                        <div className="sun" />
-                        <div className="hill one" />
-                        <div className="hill two" />
-                        <div className="hill three" />
-                        <div className="forest">
-                          {Array.from({ length: 14 }, (_, i) => (
-                            <i
-                              key={i}
-                              style={{
-                                left: `${i * 8}%`,
-                                height: 40 + ((i * 23) % 60),
-                                opacity: 0.25 + (i % 3) * 0.15,
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <div className="hero-house">
-                          <House size={66} />
-                        </div>
-                      </div>
-                      <div className="hero-copy">
-                        <span className="tag live">
-                          <i />
-                          YOUR SANCTUARY
-                        </span>
-                        <h2>
-                          Good things
-                          <br />
-                          are taking root.
-                        </h2>
-                        <p>
-                          {s.creatures.length} companions. {s.discovered.length}{" "}
-                          forms discovered.
-                          <br />A whole wild world still ahead.
-                        </p>
-                        <button onClick={() => go("Combat")}>
-                          Find an adventure <ArrowUpRight size={16} />
-                        </button>
-                      </div>
-                      <div className="hero-companion">
-                        <Sigil
-                          family={
-                            s.creatures[0]?.family ||
-                            s.incubators.find((i) => i.egg)?.egg?.family ||
-                            "F01"
-                          }
-                          stage={s.creatures[0]?.stage || 1}
-                          size="lg"
-                          color={s.creatures[0]?.color}
-                          effect={s.creatures[0]?.effect}
-                        />
-                      </div>
-                      <div className="hero-foot">
-                        <span>
-                          <House size={15} /> Housing {s.creatures.length}/
-                          {E.capacity(s)}
-                        </span>
-                        <span>
-                          <BookOpen size={15} />{" "}
-                          {new Set(s.discovered.map((d) => d.slice(0, 3))).size}
-                          /50 families
-                        </span>
-                      </div>
-                    </div>
-                    <div className="panel field-notes">
-                      <div className="eyebrow">FIELD NOTES</div>
-                      <h2>A purposeful day.</h2>
-                      <div className="active-line">
-                        <span className="activity-icon coral">
-                          <Swords />
-                        </span>
-                        <div>
-                          <small>COMBAT</small>
-                          <strong>
-                            {s.combat
-                              ? ENCOUNTER[s.combat.encounter].name
-                              : "The trail is quiet"}
-                          </strong>
-                          <p>
-                            {s.combat
-                              ? `${s.combat.wins} victories · ${s.combat.defeats ? "Recovering" : "In progress"}`
-                              : "Select an encounter to begin."}
-                          </p>
-                        </div>
-                        <button
-                          className="icon-button"
-                          onClick={() => go("Combat")}
-                          aria-label="Open combat"
-                        >
-                          <ChevronRight size={18} />
-                        </button>
-                      </div>
-                      <div className="active-line">
-                        <span className="activity-icon green">
-                          <Pickaxe />
-                        </span>
-                        <div>
-                          <small>SKILLING</small>
-                          <strong>
-                            {s.skillJob
-                              ? ACTIVITY[s.skillJob.activity].name
-                              : "A moment of rest"}
-                          </strong>
-                          <p>
-                            {s.skillJob
-                              ? `${ACTIVITY[s.skillJob.activity].skill} · ${timer(s.skillJob.finish - now)}`
-                              : "Assign a team and put them to work."}
-                          </p>
-                        </div>
-                        <button
-                          className="icon-button"
-                          onClick={() => go("Skills")}
-                          aria-label="Open skills"
-                        >
-                          <ChevronRight size={18} />
-                        </button>
-                      </div>
-                      <div className="field-tip">
-                        <Sparkles size={16} />
-                        <p>
-                          {!s.creatures.length
-                            ? "Your starter egg is warming in the hatchery. Visit the farm to watch it."
-                            : s.creatures.length === 1
-                              ? "Win a battle and claim “Into the wilds” below for your second egg."
-                              : "Keep combat and skilling going together. A creature can serve on one team at a time."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="stat-row">
-                    <div>
-                      <PawPrint />
-                      <span>
-                        COMPANIONS
-                        <strong>
-                          {s.creatures.length}
-                          <small> / {E.capacity(s)} spaces</small>
-                        </strong>
-                      </span>
-                    </div>
-                    <div>
-                      <Swords />
-                      <span>
-                        VICTORIES
-                        <strong>
-                          {(s.metrics.wins || 0).toLocaleString()}
-                        </strong>
-                      </span>
-                    </div>
-                    <div>
-                      <EggIcon />
-                      <span>
-                        INCUBATING
-                        <strong>
-                          {s.incubators.filter((i) => i.egg).length}
-                          <small> / {s.incubators.length} incubators</small>
-                        </strong>
-                      </span>
-                    </div>
-                    <div>
-                      <Sparkles />
-                      <span>
-                        RARE COMPANIONS
-                        <strong>
-                          {
-                            s.creatures.filter(
-                              (c) =>
-                                c.color !== "Normal" || c.effect !== "Normal",
-                            ).length
-                          }
-                        </strong>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="two-col">
-                    <Section
-                      label="THE HEART OF YOUR TEAM"
-                      title="Your companions"
-                      action={
-                        <button
-                          className="text-button"
-                          onClick={() => go("Creatures")}
-                        >
-                          View all <ArrowUpRight size={14} />
-                        </button>
-                      }
-                    >
-                      <div className="companion-list">
-                        {s.creatures
-                          .slice(0, 4)
-                          .map((c) => creatureCard(c, true))}
-                        {!s.creatures.length && (
-                          <Empty title="A first friend is on the way">
-                            Visit the farm to hatch your starter.
-                          </Empty>
-                        )}
-                      </div>
-                    </Section>
-                    <Section
-                      label="SMALL STEPS, BIG STORIES"
-                      title="Progression journal"
-                    >
-                      <div className="journal-list">
-                        {JOURNAL.filter((j) => !s.claims.includes(j[0]))
-                          .slice(0, 3)
-                          .map(([id, title, key, target, reward]) => (
-                            <div className="journal-row" key={id}>
-                              <div className="journal-icon">
-                                <ScrollText size={18} />
-                              </div>
-                              <div>
-                                <strong>{title}</strong>
-                                <p>
-                                  {Math.min(s.metrics[key] || 0, target)}/
-                                  {target} · +{reward} gold
-                                </p>
-                              </div>
-                              <button
-                                className="small secondary"
-                                disabled={(s.metrics[key] || 0) < target}
-                                onClick={action((s) => E.claim(s, id))}
-                              >
-                                Claim
-                              </button>
-                            </div>
-                          ))}
-                      </div>
-                    </Section>
-                  </div>
-                  <div className="two-col">
-                    <div className="panel">
-                      <div className="section-heading">
-                        <h3>New beginnings</h3>
-                        <button
-                          className="text-button"
-                          onClick={() => go("Farm")}
-                        >
-                          Visit farm <ChevronRight size={14} />
-                        </button>
-                      </div>
-                      {s.incubators.slice(0, 3).map((inc, i) => (
-                        <div className="job-preview" key={inc.id}>
-                          <EggIcon size={19} />
-                          <div>
-                            <strong>Incubator {i + 1}</strong>
-                            <small>
-                              {inc.egg
-                                ? FAMILY[inc.egg.family].names[0] +
-                                  " · " +
-                                  (inc.finish <= now
-                                    ? "Ready to hatch"
-                                    : timer(inc.finish - now))
-                                : "Available for an egg"}
-                            </small>
-                          </div>
-                          {inc.egg && inc.finish <= now && (
-                            <button
-                              className="small secondary"
-                              onClick={action((s) => E.hatch(s, inc.id))}
-                            >
-                              Hatch
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="panel">
-                      <h3>Growing together</h3>
-                      {s.breeding.length ? (
-                        s.breeding.map((job) => (
-                          <div className="job-preview" key={job.id}>
-                            <Heart size={19} />
-                            <div>
-                              <strong>Breeding pair</strong>
-                              <small>{timer(job.finish - now)} remaining</small>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="tiny muted">
-                          No active breeding pairs. Available after the first
-                          region boss.
-                        </p>
-                      )}
-                      {s.upgrades.map((up) => (
-                        <div className="job-preview" key={up.facility}>
-                          <House size={19} />
-                          <div>
-                            <strong>
-                              {up.facility} → Lv {up.level}
-                            </strong>
-                            <small>{timer(up.finish - now)}</small>
-                          </div>
-                        </div>
-                      ))}
-                      <p className="tiny">
-                        Housing level {s.facilities.Housing} ·{" "}
-                        {E.capacity(s) - s.creatures.length} free spaces
-                      </p>
-                    </div>
-                  </div>
-                  <Section title="Around the sanctuary" label="RECENT ACTIVITY">
-                    <ActivityLog s={s} />
-                  </Section>
-                </>
+                <Dashboard
+                  s={s}
+                  act={act}
+                  go={go}
+                  onTeam={setTeamEditor}
+                  onDetail={setDetail}
+                />
               )}
               {page === "Combat" && (
-                <>
-                  <div className="two-col">
-                    <div className="panel">
-                      <div className="section-heading">
-                        <h2>Combat formation</h2>
-                        <span className="tag">
-                          {s.combatTeam.filter(Boolean).length}/6
-                        </span>
-                      </div>
-                      {teamSlots("combat")}
-                      <p className="muted tiny">
-                        Front row draws attacks first. Backline abilities can
-                        bypass it.
-                      </p>
-                      <div className="button-row">
-                        <button
-                          className="secondary small"
-                          onClick={() => go("Creatures")}
-                        >
-                          Manage team
-                        </button>
-                        <button
-                          className="secondary small"
-                          disabled={s.facilities.Workshop < 2}
-                          onClick={() => {
-                            const name = prompt(
-                              "Loadout name",
-                              "Combat formation",
-                            );
-                            if (name) act((s) => E.saveLoadout(s, name));
-                          }}
-                        >
-                          Save loadout
-                        </button>
-                        {s.loadouts.map((l) => (
-                          <button
-                            key={l.id}
-                            className="text-button small"
-                            onClick={action((s) => E.applyLoadout(s, l.id))}
-                          >
-                            {l.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="panel">
-                      <div className="eyebrow">ELEMENTAL ADVANTAGE</div>
-                      <h3>Read the matchup.</h3>
-                      <div className="element-cycle">
-                        {ELEMENTS.map((el) => {
-                          const Icon = EICON[el];
-                          return (
-                            <div key={el}>
-                              <span
-                                className={`element-bubble ${elementClass(el)}`}
-                              >
-                                <Icon size={20} />
-                              </span>
-                              <small>{el}</small>
-                              <ChevronRight size={12} />
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <p className="muted">
-                        Each element defeats the next; Water defeats Fire.
-                        Advantage 1.25×, disadvantage 0.75×. All other matchups
-                        are neutral.
-                      </p>
-                      <div className="button-row">
-                        {["ration", "potion", "ward"].map((k) => (
-                          <button
-                            className="secondary small"
-                            key={k}
-                            onClick={action((s) => E.consume(s, k))}
-                          >
-                            {pretty(k)} ({E.fmt(s.inventory[k] || 0)})
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  {s.combat && (
-                    <Section
-                      title={ENCOUNTER[s.combat.encounter].name}
-                      label={
-                        s.combat.adventure
-                          ? `${ADVENTURES.find((a) => a.id === s.combat!.adventure!.id)?.name} · ENCOUNTER ${s.combat.adventure.node + 1}`
-                          : "LIVE ENCOUNTER"
-                      }
-                      action={
-                        <button
-                          className="danger secondary small"
-                          onClick={() =>
-                            confirm(
-                              "End this run?",
-                              "Earned rewards are retained. An unfinished adventure will end.",
-                              () => act(E.stopCombat),
-                            )
-                          }
-                        >
-                          Stop run
-                        </button>
-                      }
-                    >
-                      <Battle s={s} onDetail={setDetail} />
-                      <div className="panel combat-settings">
-                        <span>
-                          {s.combat.wins} wins · {s.combat.defeats} defeats
-                        </span>
-                        {s.combat.defeats ? (
-                          <button onClick={action(E.retryCombat)}>
-                            Recover and retry
-                          </button>
-                        ) : (
-                          <>
-                            <label className="switch">
-                              <input
-                                type="checkbox"
-                                checked={s.combat.repeat}
-                                onChange={action((s) => {
-                                  s.combat!.repeat = !s.combat!.repeat;
-                                })}
-                              />
-                              Repeat encounter
-                            </label>
-                            <label>
-                              Stop after wins
-                              <input
-                                aria-label="Stop after wins"
-                                type="number"
-                                min="0"
-                                value={s.combat.limit}
-                                onChange={(e) =>
-                                  act((s) => {
-                                    s.combat!.limit = Math.max(
-                                      0,
-                                      Number(e.target.value),
-                                    );
-                                  })
-                                }
-                              />
-                            </label>
-                            <label>
-                              Resource target
-                              <select
-                                value={s.combat.resource}
-                                onChange={(e) =>
-                                  act((s) => {
-                                    s.combat!.resource = e.target.value;
-                                  })
-                                }
-                              >
-                                <option value="">None</option>
-                                {Object.entries(MATERIALS).map(([id, n]) => (
-                                  <option key={id} value={id}>
-                                    {n}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            {s.combat.resource && (
-                              <input
-                                aria-label="Target amount"
-                                type="number"
-                                min="1"
-                                value={s.combat.amount}
-                                onChange={(e) =>
-                                  act((s) => {
-                                    s.combat!.amount = Math.max(
-                                      1,
-                                      Number(e.target.value),
-                                    );
-                                  })
-                                }
-                              />
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </Section>
-                  )}
-                  <Section title="Choose your trail" label="TEN REGIONS">
-                    <div className="region-tabs">
-                      {REGIONS.map((r, i) => (
-                        <button
-                          key={r}
-                          className={region === i ? "active" : ""}
-                          onClick={() => setRegion(i)}
-                        >
-                          {!E.unlockedRegion(s, i) && <Lock size={12} />}
-                          <span>{String(i + 1).padStart(2, "0")}</span>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="region-banner">
-                      <div>
-                        <div className="eyebrow">REGION {region + 1}</div>
-                        <h2>{REGIONS[region]}</h2>
-                        <p>{REGION_DETAILS[region]}</p>
-                      </div>
-                      <span className="tag">
-                        {E.unlockedRegion(s, region)
-                          ? "Open for exploration"
-                          : `Defeat ${ENCOUNTER[`boss-${region - 1}`]?.name}`}
-                      </span>
-                    </div>
-                    <div className="encounter-grid">
-                      {ENCOUNTERS.filter(
-                        (e) => e.region === region && e.kind !== "slayer",
-                      )
-                        .sort((a, b) => {
-                          const c = s.creatures.find((c) =>
-                            s.combatTeam.includes(c.id),
-                          );
-                          return region === 0 &&
-                            c &&
-                            a.kind === "wild" &&
-                            b.kind === "wild"
-                            ? E.elemental(
-                                FAMILY[c.family].element,
-                                FAMILY[b.families[0]].element,
-                              ) -
-                                E.elemental(
-                                  FAMILY[c.family].element,
-                                  FAMILY[a.families[0]].element,
-                                )
-                            : 0;
-                        })
-                        .map((e) => (
-                          <div
-                            key={e.id}
-                            className={`panel encounter-card ${e.kind === "boss" ? "boss" : ""}`}
-                          >
-                            <div className="encounter-top">
-                              <Sigil
-                                family={e.families[0]}
-                                stage={
-                                  e.level >= 75 ? 3 : e.level >= 25 ? 2 : 1
-                                }
-                              />
-                              <span className="tag">
-                                {e.kind === "boss"
-                                  ? "REGION BOSS"
-                                  : "WILD ENCOUNTER"}
-                              </span>
-                            </div>
-                            <h3>{e.name}</h3>
-                            <p>
-                              Level {e.level} · {e.families.length} enemies
-                            </p>
-                            <div className="muted tiny">
-                              {e.mechanic} · eggs, materials, equipment
-                            </div>
-                            <button
-                              className={e.kind === "boss" ? "" : "secondary"}
-                              disabled={
-                                !E.unlockedRegion(s, region) || !!s.combat
-                              }
-                              onClick={action((s) => E.startCombat(s, e.id))}
-                            >
-                              Challenge <Swords size={14} />
-                            </button>
-                          </div>
-                        ))}
-                    </div>
-                  </Section>
-                  <Section
-                    title="Beyond the beaten path"
-                    label="DUNGEONS & SOLO RAIDS"
-                  >
-                    <div className="encounter-grid">
-                      {ADVENTURES.map((a) => (
-                        <div className="panel" key={a.id}>
-                          <span className="tag">
-                            {a.kind.toUpperCase()} · {a.nodes.length} ENCOUNTERS
-                          </span>
-                          <h3>{a.name}</h3>
-                          <p>{a.description}</p>
-                          <Cost s={s} cost={{ gold: a.cost }} />
-                          <button
-                            disabled={
-                              !!s.combat || !E.unlockedRegion(s, a.region)
-                            }
-                            onClick={action((s) =>
-                              E.startCombat(s, a.nodes[0], a.id),
-                            )}
-                          >
-                            {E.unlockedRegion(s, a.region)
-                              ? "Enter adventure"
-                              : `Requires region ${a.region + 1}`}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </Section>
-                </>
+                <CombatScreen
+                  s={s}
+                  act={act}
+                  onTeam={() => setTeamEditor("combat")}
+                  onDetail={setDetail}
+                  confirm={confirm}
+                />
               )}
               {page === "Creatures" && (
                 <>
+                  <div className="button-row collection-team-actions">
+                    <button
+                      className="secondary small"
+                      onClick={() => setTeamEditor("combat")}
+                    >
+                      Combat team
+                    </button>
+                    <button
+                      className="secondary small"
+                      onClick={() => setTeamEditor("skill")}
+                    >
+                      Work crew
+                    </button>
+                  </div>
                   <div className="toolbar">
                     <label className="search">
                       <Search size={17} />
@@ -1840,505 +1202,38 @@ export default function App() {
                 </>
               )}
               {page === "Skills" && (
-                <>
-                  <div className="skill-tabs">
-                    {SKILLS.map((k) => (
-                      <button
-                        key={k}
-                        className={skill === k ? "active" : ""}
-                        onClick={() => {
-                          setSkill(k);
-                          if (k === "Slayer") go("Slayer");
-                        }}
-                      >
-                        <span>{k}</span>
-                        <small>Lv {s.skills[k].level}</small>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="two-col">
-                    <div className="panel">
-                      <div className="eyebrow">YOUR WORKING CREW</div>
-                      <h2>Skilling team</h2>
-                      {teamSlots("skill")}
-                      <div className="button-row">
-                        <button
-                          className="secondary small"
-                          onClick={() => go("Creatures")}
-                        >
-                          Manage team
-                        </button>
-                        <button
-                          className="secondary small"
-                          disabled={s.facilities.Workshop < 6}
-                          onClick={() => setWorkflows(true)}
-                        >
-                          Workflows
-                        </button>
-                      </div>
-                      <p className="muted tiny">
-                        One activity at a time. The fixed creature XP pool is
-                        shared equally.
-                      </p>
-                    </div>
-                    <div className="panel">
-                      <div className="eyebrow">{skill.toUpperCase()}</div>
-                      <h2>Level {s.skills[skill].level}</h2>
-                      <Progress
-                        value={E.D(s.skills[skill].xp)
-                          .div(E.xpNext(s.skills[skill].level))
-                          .toNumber()}
-                        label={`${E.fmt(s.skills[skill].xp)} / ${E.fmt(E.xpNext(s.skills[skill].level))} XP`}
-                      />
-                      <p>
-                        Team aptitude: +
-                        {(E.teamBonus(s, skill) * 100).toFixed(1)}% efficiency.
-                      </p>
-                      <p className="muted tiny">
-                        Permanent speed milestones at 25, 50, 100, 250, 500 and
-                        continued logarithmic progression.
-                      </p>
-                      {s.skillJob ? (
-                        <div className="active-skill">
-                          <strong>{ACTIVITY[s.skillJob.activity].name}</strong>
-                          <span>
-                            {timer(s.skillJob.finish - now)} ·{" "}
-                            {s.activity
-                              ? "Repeating"
-                              : "Finishing reserved cycle"}
-                          </span>
-                          <button
-                            className="secondary small"
-                            onClick={action(E.pauseSkill)}
-                          >
-                            <Pause size={13} /> Pause after cycle
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="muted">
-                          Choose an activity below to start.
-                        </p>
-                      )}
-                      {s.queue.length > 0 && (
-                        <p className="tiny">
-                          Queue:{" "}
-                          {s.queue.map((id) => ACTIVITY[id].name).join(" → ")}{" "}
-                          <button
-                            className="text-button"
-                            onClick={action((s) => {
-                              s.queue = [];
-                            })}
-                          >
-                            Clear
-                          </button>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Section title={`${skill} activities`}>
-                    <div className="activity-table">
-                      <div className="activity-head">
-                        <span>ACTIVITY / REQUIREMENT</span>
-                        <span>OUTPUT</span>
-                        <span>TIME / XP</span>
-                        <span>MASTERY</span>
-                        <span />
-                      </div>
-                      {ACTIVITIES.filter((a) => a.skill === skill).map((a) => (
-                        <div
-                          className={`activity-row ${s.activity === a.id ? "selected" : ""}`}
-                          key={a.id}
-                        >
-                          <div>
-                            <strong>{a.name}</strong>
-                            <small>
-                              Lv {a.level} {skill}
-                            </small>
-                            {Object.keys(a.inputs).length > 0 && (
-                              <Cost s={s} cost={a.inputs} />
-                            )}
-                          </div>
-                          <div>
-                            {Object.entries(a.outputs).map(([k, v]) => (
-                              <span key={k}>
-                                {v} {pretty(k)}
-                              </span>
-                            ))}
-                          </div>
-                          <div>
-                            {E.activityDuration(s, a.id).toFixed(1)}s
-                            <small>{E.fmt(a.xp)} XP</small>
-                          </div>
-                          <div>
-                            Lv {s.mastery[a.id]?.level || 1}
-                            <small>{E.fmt(s.mastery[a.id]?.xp || 0)} XP</small>
-                          </div>
-                          <div className="button-row">
-                            <button
-                              className="small"
-                              disabled={s.skills[skill].level < a.level}
-                              onClick={action((s) => E.startSkill(s, a.id))}
-                            >
-                              {s.activity === a.id ? "Active" : "Start"}
-                            </button>
-                            <button
-                              className="icon-button"
-                              title="Add to queue"
-                              disabled={s.facilities.Workshop < 2}
-                              onClick={action((s) => {
-                                s.queue.push(a.id);
-                              })}
-                            >
-                              <Plus size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Section>
-                </>
+                <SkillsScreen
+                  s={s}
+                  act={act}
+                  onTeam={() => setTeamEditor("skill")}
+                  go={go}
+                  onWorkflow={() => setWorkflows(true)}
+                />
               )}
               {page === "Farm" && (
-                <Farm s={s} act={act} now={now} confirm={confirm} />
+                <Farm
+                  s={s}
+                  act={act}
+                  now={now}
+                  confirm={confirm}
+                  tab={farmTab}
+                  setTab={setFarmTab}
+                />
               )}
               {page === "Equipment" && (
-                <>
-                  <div className="toolbar">
-                    <label className="search">
-                      <Search size={17} />
-                      <input
-                        placeholder="Search slot or stat…"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                      />
-                    </label>
-                    <select
-                      aria-label="Equipment type"
-                      value={itemSlot}
-                      onChange={(e) => setItemSlot(e.target.value)}
-                    >
-                      {["All", "Essence", "Gem", "Trinket"].map((k) => (
-                        <option key={k}>{k}</option>
-                      ))}
-                    </select>
-                    <select
-                      aria-label="Equipment rarity"
-                      value={rarity}
-                      onChange={(e) => setRarity(e.target.value)}
-                    >
-                      {["All", ...RARITIES].map((k) => (
-                        <option key={k}>{k}</option>
-                      ))}
-                    </select>
-                    <select
-                      aria-label="Sort equipment"
-                      value={itemSort}
-                      onChange={(e) => setItemSort(e.target.value)}
-                    >
-                      {[
-                        "Rarity",
-                        "Upgrade level",
-                        "Original roll total",
-                        "Slot",
-                      ].map((k) => (
-                        <option key={k}>{k}</option>
-                      ))}
-                    </select>
-                    <button
-                      className="secondary small"
-                      onClick={() => {
-                        setRuleType("salvage");
-                        setShowRules(true);
-                      }}
-                    >
-                      Auto-salvage rules
-                    </button>
-                    <button
-                      className="danger secondary small"
-                      disabled={!selectedItems.length}
-                      onClick={() =>
-                        confirm(
-                          "Salvage selected equipment?",
-                          "Equipped and locked items are protected. Upgraded items return only their original salvage materials; invested upgrades are lost.",
-                          () =>
-                            act((s) => {
-                              E.salvage(s, selectedItems);
-                              setSelectedItems([]);
-                            }),
-                        )
-                      }
-                    >
-                      Salvage ({selectedItems.length})
-                    </button>
-                  </div>
-                  {selectedItems.length === 2 && (
-                    <EquipmentComparison
-                      items={s.items.filter((i) =>
-                        selectedItems.includes(i.id),
-                      )}
-                    />
-                  )}
-                  <Pager
-                    page={equipmentPage}
-                    setPage={setEquipmentPage}
-                    total={filteredItems.length}
-                  />
-                  <div className="equipment-grid">
-                    {filteredItems
-                      .slice(equipmentPage * 30, equipmentPage * 30 + 30)
-                      .map((i) => (
-                        <div
-                          key={i.id}
-                          className={`panel item rarity-${i.rarity}`}
-                        >
-                          <div className="item-header">
-                            <input
-                              type="checkbox"
-                              aria-label={`Select ${RARITIES[i.rarity]} ${i.slot}`}
-                              checked={selectedItems.includes(i.id)}
-                              onChange={(e) =>
-                                setSelectedItems(
-                                  e.target.checked
-                                    ? [...selectedItems, i.id]
-                                    : selectedItems.filter((x) => x !== i.id),
-                                )
-                              }
-                            />
-                            <Diamond size={23} />
-                            <div>
-                              <span className="tiny">
-                                {RARITIES[i.rarity].toUpperCase()}
-                              </span>
-                              <h3>
-                                {i.slot} +{i.level}
-                              </h3>
-                            </div>
-                            <button
-                              aria-label="Lock item"
-                              className={`icon-button ${i.locked ? "selected" : ""}`}
-                              onClick={action((s) => {
-                                s.items.find((x) => x.id === i.id)!.locked =
-                                  !i.locked;
-                              })}
-                            >
-                              <Lock size={15} />
-                            </button>
-                            <button
-                              aria-label="Favorite item"
-                              className={`icon-button ${i.favorite ? "selected" : ""}`}
-                              onClick={action((s) => {
-                                s.items.find((x) => x.id === i.id)!.favorite =
-                                  !i.favorite;
-                              })}
-                            >
-                              <Star size={15} />
-                            </button>
-                          </div>
-                          {Object.entries(E.itemStats(i)).map(([k, v]) => (
-                            <div className="affix" key={k}>
-                              <span>{AFFIX_NAMES[k]}</span>
-                              <strong>+{E.fmt(v, 2)}</strong>
-                            </div>
-                          ))}
-                          <div className="tiny muted">
-                            {i.milestones.length} permanent milestones · Salvage{" "}
-                            {E.fmt(E.salvageValue(i))}{" "}
-                            {pretty(E.salvageMaterial(i))}
-                          </div>
-                          <label>
-                            Equip on
-                            <select
-                              value={
-                                s.creatures.find((c) =>
-                                  Object.values(c.equipment).includes(i.id),
-                                )?.id || ""
-                              }
-                              onChange={(e) =>
-                                act((s) => {
-                                  if (e.target.value)
-                                    E.equip(s, e.target.value, i.id);
-                                  else {
-                                    if (s.combat)
-                                      throw Error("Stop combat first.");
-                                    for (const c of s.creatures)
-                                      for (const slot of [
-                                        "Essence",
-                                        "Gem",
-                                        "Trinket",
-                                      ] as Slot[])
-                                        if (c.equipment[slot] === i.id)
-                                          delete c.equipment[slot];
-                                  }
-                                })
-                              }
-                            >
-                              <option value="">Unequipped</option>
-                              {s.creatures.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {cname(c)} Lv {c.level}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <Cost s={s} cost={E.upgradeCost(i)} />
-                          <button
-                            onClick={action((s) => E.upgradeItem(s, i.id))}
-                          >
-                            Upgrade to +{i.level + 1} ·{" "}
-                            {(E.upgradeChance(i.level + 1) * 100).toFixed(1)}%
-                          </button>
-                          <button
-                            className="text-button danger"
-                            onClick={() =>
-                              confirm(
-                                "Salvage this item?",
-                                "Original rolls determine the return. No upgrade materials are refunded.",
-                                () => act((s) => E.salvage(s, [i.id])),
-                              )
-                            }
-                          >
-                            Salvage
-                          </button>
-                          {i.milestones.length > 0 && (
-                            <details>
-                              <summary>Milestone history</summary>
-                              {i.milestones.map((m) => (
-                                <p key={m.level}>
-                                  +{m.level}:{" "}
-                                  {AFFIX_NAMES[i.affixes[m.index].key]} +
-                                  {E.fmt(m.roll, 2)}
-                                </p>
-                              ))}
-                            </details>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                  {!s.items.length && (
-                    <Empty icon={Diamond} title="A story waiting to be forged">
-                      Equipment drops in combat. The early gathering journal
-                      reward also grants an Essence.
-                    </Empty>
-                  )}
-                </>
+                <EquipmentScreen
+                  s={s}
+                  act={act}
+                  go={go}
+                  confirm={confirm}
+                  onRules={() => {
+                    setRuleType("salvage");
+                    setShowRules(true);
+                  }}
+                />
               )}
               {page === "Slayer" && (
-                <>
-                  <div className="panel master-panel">
-                    <div className="master-emblem">
-                      <Swords size={42} />
-                    </div>
-                    <div>
-                      <div className="eyebrow">THE SLAYER MASTER</div>
-                      <h2>Earn the wilds’ respect.</h2>
-                      <p>
-                        One contract at a time. Complete your hunt, then return
-                        here for your reward.
-                      </p>
-                      <p className="muted tiny">
-                        Milestones permanently add 5% contract gold/XP and 10%
-                        tokens each. {E.skillMilestones(s.skills.Slayer.level)}{" "}
-                        earned.
-                      </p>
-                      <span className="tag">
-                        Slayer Lv {s.skills.Slayer.level} · {E.fmt(s.tokens)}{" "}
-                        tokens
-                      </span>
-                    </div>
-                  </div>
-                  {s.contract ? (
-                    <div className="panel contract">
-                      <h2>
-                        {s.contract.kind === "kill"
-                          ? "Clear the trail"
-                          : s.contract.kind === "retrieve"
-                            ? "Bring back proof"
-                            : s.contract.kind === "elite"
-                              ? "An elder awaits"
-                              : "A precise hunt"}
-                      </h2>
-                      <p>
-                        {REGIONS[s.contract.region]} ·{" "}
-                        {s.contract.kind === "retrieve"
-                          ? `Turn in ${s.contract.target} ${pretty(s.contract.item)} (${E.fmt(s.inventory[s.contract.item] || 0)} owned)`
-                          : s.contract.kind === "hunt"
-                            ? `Defeat enemies at ${ENCOUNTER[`wild-${s.contract.region}-3`].name}`
-                            : s.contract.kind === "elite"
-                              ? "Defeat boss or Slayer-exclusive enemies"
-                              : "Defeat enemies in this region"}
-                      </p>
-                      <Progress
-                        value={
-                          s.contract.kind === "retrieve"
-                            ? E.amount(s, s.contract.item).toNumber()
-                            : s.contract.progress
-                        }
-                        max={s.contract.target}
-                      />
-                      <p>
-                        Rewards: {s.contract.reward} gold, {s.contract.reward}{" "}
-                        Slayer XP, {E.slayerTokens(s, s.contract.region)}{" "}
-                        tokens, 1 catalyst
-                      </p>
-                      <div className="button-row">
-                        <button onClick={action(E.turnIn)}>
-                          Turn in contract
-                        </button>
-                        <button
-                          className="secondary"
-                          onClick={() =>
-                            confirm(
-                              "Reroll this contract?",
-                              `Costs ${100 + s.skills.Slayer.level * 10} gold. Current progress is lost.`,
-                              () => act((s) => E.requestContract(s, true)),
-                            )
-                          }
-                        >
-                          Reroll
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="panel">
-                      <p>
-                        {s.unlocks.includes("boss-0")
-                          ? "The next contract is yours for the asking."
-                          : "Defeat the first region boss to meet the Slayer Master."}
-                      </p>
-                      <button onClick={action((s) => E.requestContract(s))}>
-                        Request contract
-                      </button>
-                    </div>
-                  )}
-                  <Section title="Exclusive elder hunts">
-                    <div className="encounter-grid">
-                      {ENCOUNTERS.filter((e) => e.kind === "slayer").map(
-                        (e) => (
-                          <div className="panel" key={e.id}>
-                            <span className="tag">
-                              SLAYER {1 + e.region * 15}
-                            </span>
-                            <h3>{e.name}</h3>
-                            <p>Level {e.level} · Elite loot and materials</p>
-                            <button
-                              disabled={
-                                !!s.combat ||
-                                !E.unlockedRegion(s, e.region) ||
-                                s.skills.Slayer.level < 1 + e.region * 15
-                              }
-                              onClick={() => {
-                                act((s) => E.startCombat(s, e.id));
-                                go("Combat");
-                              }}
-                            >
-                              Hunt
-                            </button>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </Section>
-                </>
+                <SlayerScreen s={s} act={act} go={go} confirm={confirm} />
               )}
               {page === "Collection" && (
                 <>
@@ -2376,19 +1271,47 @@ export default function App() {
                       </span>
                     ))}
                   </div>
-                  <div className="skill-tabs">
-                    {["All", ...ELEMENTS, "Journal"].map((k) => (
+                  <div className="collection-controls">
+                    <div className="segmented">
                       <button
-                        key={k}
-                        className={collectionFilter === k ? "active" : ""}
+                        className={
+                          collectionFilter !== "Journal" ? "active" : ""
+                        }
                         onClick={() => {
-                          setCollectionFilter(k);
+                          setCollectionFilter("All");
                           setCollectionPage(0);
                         }}
                       >
-                        {k}
+                        Encyclopedia
                       </button>
-                    ))}
+                      <button
+                        className={
+                          collectionFilter === "Journal" ? "active" : ""
+                        }
+                        onClick={() => {
+                          setCollectionFilter("Journal");
+                          setCollectionPage(0);
+                        }}
+                      >
+                        Journal
+                      </button>
+                    </div>
+                    {collectionFilter !== "Journal" && (
+                      <select
+                        aria-label="Filter encyclopedia element"
+                        value={collectionFilter}
+                        onChange={(e) => {
+                          setCollectionFilter(e.target.value);
+                          setCollectionPage(0);
+                        }}
+                      >
+                        {["All", ...ELEMENTS].map((k) => (
+                          <option key={k} value={k}>
+                            {k === "All" ? "All elements" : k}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   {collectionFilter === "All" && (
                     <div className="button-row">
@@ -2508,61 +1431,78 @@ export default function App() {
               )}
               {page === "Shop" && (
                 <>
-                  <Section title="Trail provisions" label="GENERAL STORE">
-                    <div className="encounter-grid">
-                      {[
-                        ["ration", 30],
-                        ["potion", 50],
-                      ].map(([k, cost]) => (
-                        <div className="panel" key={k}>
-                          <ShoppingBag className="accent" />
-                          <h3>{pretty(k as string)}</h3>
-                          <p>
-                            {k === "ration"
-                              ? "+15% team damage for 60 seconds in the current encounter."
-                              : "Restore 30% maximum HP to living allies during combat."}
-                          </p>
-                          <p>
-                            {cost} gold · {E.fmt(s.inventory[k] || 0)} owned
-                          </p>
-                          <button
-                            onClick={action((s) => E.buy(s, k as string))}
-                          >
-                            Buy one
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </Section>
-                  <Section title="The token exchange" label="SLAYER REWARDS">
-                    <div className="encounter-grid">
-                      {[
-                        ["inherit1", 10],
-                        ["inherit2", 50],
-                        ["inherit3", 150],
-                        ["catalyst", 35],
-                        ["relic", 100],
-                      ].map(([k, cost]) => (
-                        <div className="panel" key={k}>
-                          <span className="tag">{cost} TOKENS</span>
-                          <h3>{pretty(k as string)}</h3>
-                          <p>
-                            {String(k).startsWith("inherit")
-                              ? "Guide IV inheritance when breeding. Select it before starting a pair."
-                              : "Rare material for evolution or equipment milestones."}
-                          </p>
-                          <button
-                            onClick={action((s) => E.buy(s, k as string))}
-                          >
-                            Exchange tokens
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </Section>
-                  <Section title="Material inventory">
-                    <Inventory s={s} act={act} confirm={confirm} />
-                  </Section>
+                  <div className="segmented shop-tabs">
+                    {["Supplies", "Slayer", "Materials"].map((t) => (
+                      <button
+                        key={t}
+                        className={shopTab === t ? "active" : ""}
+                        onClick={() => setShopTab(t)}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                  {shopTab === "Supplies" && (
+                    <Section title="Trail provisions" label="GENERAL STORE">
+                      <div className="encounter-grid">
+                        {[
+                          ["ration", 30],
+                          ["potion", 50],
+                        ].map(([k, cost]) => (
+                          <div className="panel" key={k}>
+                            <ShoppingBag className="accent" />
+                            <h3>{pretty(k as string)}</h3>
+                            <p>
+                              {k === "ration"
+                                ? "+15% team damage for 60 seconds in the current encounter."
+                                : "Restore 30% maximum HP to living allies during combat."}
+                            </p>
+                            <p>
+                              {cost} gold · {E.fmt(s.inventory[k] || 0)} owned
+                            </p>
+                            <button
+                              onClick={action((s) => E.buy(s, k as string))}
+                            >
+                              Buy one
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </Section>
+                  )}
+                  {shopTab === "Slayer" && (
+                    <Section title="The token exchange" label="SLAYER REWARDS">
+                      <div className="encounter-grid">
+                        {[
+                          ["inherit1", 10],
+                          ["inherit2", 50],
+                          ["inherit3", 150],
+                          ["catalyst", 35],
+                          ["relic", 100],
+                        ].map(([k, cost]) => (
+                          <div className="panel" key={k}>
+                            <span className="tag">{cost} TOKENS</span>
+                            <h3>{pretty(k as string)}</h3>
+                            <p>
+                              {String(k).startsWith("inherit")
+                                ? "Guide IV inheritance when breeding. Select it before starting a pair."
+                                : "Rare material for evolution or equipment milestones."}
+                            </p>
+                            <button
+                              onClick={action((s) => E.buy(s, k as string))}
+                            >
+                              Exchange tokens
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </Section>
+                  )}
+                  {shopTab === "Materials" && (
+                    <Section title="Material inventory">
+                      <Inventory s={s} act={act} confirm={confirm} />
+                    </Section>
+                  )}
                 </>
               )}
               {page === "Settings" && (
@@ -2592,9 +1532,9 @@ export default function App() {
                         </button>
                       </div>
                       <p className="muted tiny">
-                        Device saves every 5 seconds. Cloud checkpoints every 90
-                        seconds while signed in, and when requested. Never merge
-                        two conflicting timelines.
+                        Device saves every 5 seconds. Cloud checkpoints start at
+                        90 seconds and space out for larger saves; you can also
+                        save manually. Never merge two conflicting timelines.
                       </p>
                     </div>
                     <div className="panel">
@@ -2734,31 +1674,31 @@ export default function App() {
           </footer>
         </main>
       </div>
-      <nav className="bottom-nav">
-        {NAV.slice(0, 4).map(([name, Icon]) => (
+      <nav className="bottom-nav" aria-label="Main navigation">
+        {NAV.slice(0, 5).map(([name, Icon]) => (
           <button
             key={name}
             className={page === name ? "active" : ""}
+            aria-current={page === name ? "page" : undefined}
             onClick={() => go(name)}
           >
             <Icon size={20} />
-            <span>{name === "Combat" ? "Explore" : name}</span>
+            <span>{name}</span>
+            {name === "Farm" &&
+              s.incubators.some((i) => i.egg && i.finish <= s.time) && (
+                <i className="nav-dot" />
+              )}
           </button>
         ))}
-        <button className={more ? "active" : ""} onClick={() => setMore(!more)}>
-          <Menu size={20} />
-          <span>More</span>
-        </button>
       </nav>
-      {more && (
-        <div className="more-menu">
-          {NAV.slice(4).map(([name, Icon]) => (
-            <button key={name} onClick={() => go(name)}>
-              <Icon size={20} />
-              {name}
-            </button>
-          ))}
-        </div>
+      {teamEditor && (
+        <TeamDrawer
+          s={s}
+          act={act}
+          team={teamEditor}
+          close={() => setTeamEditor(null)}
+          confirm={confirm}
+        />
       )}
       {game.toast && (
         <div className="toast" role="status">
@@ -3403,121 +2343,18 @@ function CreatureDetail({
     </div>
   );
 }
-function Battle({ s, onDetail }: { s: Save; onDetail: (id: string) => void }) {
-  const b = s.combat!;
-  const card = (u: NonNullable<Save["combat"]>["units"][number]) => {
-    const f = FAMILY[u.family];
-    const events = b.events
-      .filter((e) => e.target === u.id && s.time - e.time < 1300)
-      .slice(-2);
-    return (
-      <button
-        key={u.id}
-        className={`battle-unit ${E.D(u.hp).lte(0) ? "fallen" : ""} ${events.some((e) => e.kind === "damage") ? "hit" : ""}`}
-        onClick={() => {
-          if (!u.enemy) onDetail(u.id);
-        }}
-      >
-        <Sigil family={u.family} stage={u.stage} />
-        <strong>{f.names[u.stage - 1]}</strong>
-        <small>Lv {u.level}</small>
-        <div className="health">
-          <i
-            style={{ width: `${E.D(u.hp).div(u.maxHp).mul(100).toNumber()}%` }}
-          />
-        </div>
-        <span className="tiny">
-          {E.fmt(u.hp)}/{E.fmt(u.maxHp)}
-        </span>
-        {E.D(u.shield).gt(0) && (
-          <span className="shield-label">
-            <Shield size={10} /> {E.fmt(u.shield)}
-          </span>
-        )}
-        <div className="status-badges">
-          {u.statuses
-            .filter((st) => st.kind !== "shieldExpiry")
-            .map((st) => (
-              <span
-                key={st.kind}
-                title={`${st.kind}: ${timer(st.until - s.time)}`}
-              >
-                {st.kind.slice(0, 3)}
-              </span>
-            ))}
-        </div>
-        {events.map((e) => (
-          <span
-            key={e.id}
-            className={`hitsplat ${e.kind}`}
-            style={{ left: `${e.id % 2 ? 30 : 60}%` }}
-          >
-            {["damage", "heal", "shield"].includes(e.kind)
-              ? (e.kind === "heal" ? "+" : "") + E.fmt(e.amount)
-              : e.kind.toUpperCase()}
-          </span>
-        ))}
-      </button>
-    );
-  };
-  return (
-    <div className="battlefield">
-      <div className="battle-label">
-        OPPOSITION <span>{ENCOUNTER[b.encounter].mechanic}</span>
-      </div>
-      <div className="battle-row enemies">
-        {b.units
-          .filter((u) => u.enemy)
-          .sort((a, b) => a.slot - b.slot)
-          .map(card)}
-      </div>
-      <div className="battle-divider">
-        <span />
-        <Swords size={20} />
-        <span />
-      </div>
-      <div className="battle-row friends">
-        {b.units
-          .filter((u) => !u.enemy)
-          .sort((a, b) => a.slot - b.slot)
-          .map(card)}
-      </div>
-      <div className="battle-label">
-        <span>YOUR TEAM</span>
-        {b.defeats
-          ? "RECOVERING"
-          : b.nextBattle
-            ? "NEXT ENCOUNTER"
-            : "AUTO COMBAT"}
-      </div>
-      {b.defeats > 0 && (
-        <div className="battle-result">
-          <Shield />
-          <h3>A setback, not an ending.</h3>
-          <p>
-            Recovery ends in{" "}
-            {timer(
-              Math.max(
-                ...s.creatures
-                  .filter((c) => s.combatTeam.includes(c.id))
-                  .map((c) => c.recoveryUntil),
-              ) - s.time,
-            )}
-            .
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
 function Farm({
   s,
   act,
   now,
   confirm,
+  tab,
+  setTab,
 }: {
   s: Save;
   act: Act;
+  tab: string;
+  setTab: (tab: string) => void;
   now: number;
   confirm: Confirm;
 }) {
@@ -3598,300 +2435,321 @@ function Farm({
         </div>
         <House size={64} />
       </div>
-      <Section title="Hatchery" label="SMALL BEGINNINGS">
-        <div className="button-row">
-          <label className="switch">
-            <input
-              type="checkbox"
-              disabled={s.facilities.Hatchery < 2}
-              checked={s.autoHatch}
-              onChange={() =>
-                act((s) => {
-                  s.autoHatch = !s.autoHatch;
-                })
-              }
-            />
-            Auto-hatch (Lv 2)
-          </label>
-          <label className="switch">
-            <input
-              type="checkbox"
-              disabled={s.facilities.Hatchery < 4}
-              checked={s.autoLoad}
-              onChange={() =>
-                act((s) => {
-                  s.autoLoad = !s.autoLoad;
-                })
-              }
-            />
-            Auto-load (Lv 4)
-          </label>
-          <select
-            aria-label="Egg selection policy"
-            disabled={s.facilities.Hatchery < 6}
-            value={s.hatchPolicy}
-            onChange={(e) =>
-              act((s) => {
-                s.hatchPolicy = e.target.value;
-              })
-            }
-          >
-            <option value="oldest">Oldest egg</option>
-            <option value="perfect">Highest total IV</option>
-            <option value="rare">Rare variants first</option>
-            {FAMILIES.map((f) => (
-              <option value={"family:" + f.id} key={f.id}>
-                {f.names[0]} only
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="incubator-grid">
-          {s.incubators.map((inc, i) => (
-            <div
-              className={`panel incubator ${inc.egg && inc.finish <= now ? "ready" : ""}`}
-              key={inc.id}
-            >
-              <div className="eyebrow">
-                INCUBATOR {String(i + 1).padStart(2, "0")}
-              </div>
-              <div className="incubator-egg">
-                {inc.egg ? (
-                  <>
-                    <Sigil family={inc.egg.family} size="lg" />
-                    <EggIcon size={26} />
-                  </>
-                ) : (
-                  <EggIcon size={64} />
-                )}
-              </div>
-              <h3>
-                {inc.egg
-                  ? FAMILY[inc.egg.family].names[0] + " egg"
-                  : "A warm space, waiting."}
-              </h3>
-              {inc.egg ? (
-                <>
-                  <p>
-                    {inc.finish <= now
-                      ? "Ready to meet the world."
-                      : timer(inc.finish - now) + " remaining"}
-                  </p>
-                  <Progress
-                    value={
-                      1 -
-                      Math.max(0, inc.finish - now) /
-                        (3600000 / (1 + 0.15 * (s.facilities.Hatchery - 1)))
-                    }
-                  />
-                  <button
-                    disabled={inc.finish > now}
-                    onClick={() => act((s) => E.hatch(s, inc.id))}
-                  >
-                    Hatch companion
-                  </button>
-                </>
-              ) : (
-                <select
-                  aria-label={`Load incubator ${i + 1}`}
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value)
-                      act((s) => E.loadEgg(s, inc.id, e.target.value));
-                  }}
-                >
-                  <option value="">Select an egg ({s.eggs.length})</option>
-                  {s.eggs.map((e) => (
-                    <option value={e.id} key={e.id}>
-                      {FAMILY[e.family].names[0]} · {e.source}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          ))}
-          <div className="panel incubator build-incubator">
-            <Plus size={36} />
-            <h3>Another new beginning</h3>
-            <p>Incubators run independently.</p>
-            <Cost s={s} cost={E.incubatorCost(s)} />
-            <button className="secondary" onClick={() => act(E.buildIncubator)}>
-              Build incubator
-            </button>
-          </div>
-        </div>
-      </Section>
-      <Section title="Breeding complex" label="THE NEXT GENERATION">
-        <div className="panel">
-          <div className="two-col">
-            <div>
-              <label>
-                Female parent
-                <select
-                  value={mother}
-                  onChange={(e) => setMother(e.target.value)}
-                >
-                  <option value="">Choose a female</option>
-                  {s.creatures
-                    .filter((c) => c.gender === "F" && E.free(s, c))
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {cname(c)} · {Object.values(c.ivs).join("/")}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              {inheritance("mother")}
-            </div>
-            <div>
-              <label>
-                Male parent
-                <select
-                  value={father}
-                  onChange={(e) => setFather(e.target.value)}
-                >
-                  <option value="">Choose a male</option>
-                  {s.creatures
-                    .filter((c) => c.gender === "M" && E.free(s, c))
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {cname(c)} · {Object.values(c.ivs).join("/")}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              {inheritance("father")}
-            </div>
-          </div>
-          <p className="muted tiny">
-            75 gold · Base 30 minutes. Parents are reserved until completion.
-            Two Legacy Threads inherit six non-overlapping IVs. Facilities do
-            not change variant odds.
-          </p>
-          <label className="switch">
-            <input
-              type="checkbox"
-              disabled={s.facilities.Breeding < 4}
-              checked={repeatBreed}
-              onChange={(e) => setRepeatBreed(e.target.checked)}
-            />
-            Repeat pair while ingredients are available (Breeding Lv 4)
-          </label>
+      <div className="segmented" aria-label="Farm sections">
+        {["Hatchery", "Breeding", "Buildings"].map((t) => (
           <button
-            onClick={() =>
-              confirm(
-                "Start breeding?",
-                "This spends 75 gold and selected threads now, and reserves both parents until the egg is produced.",
-                () =>
-                  act((s) =>
-                    (repeatBreed ? E.repeatBreeding : E.breed)(
-                      s,
-                      mother,
-                      father,
-                      mc,
-                      fc,
-                      ms,
-                      fs,
-                    ),
-                  ),
-              )
-            }
+            key={t}
+            className={tab === t ? "active" : ""}
+            onClick={() => setTab(t)}
           >
-            Start breeding pair
+            {t}
           </button>
-        </div>
-        {(s.breedingPlans || [])
-          .filter((p) => p.enabled)
-          .map((plan) => (
-            <div className="panel rule-row" key={plan.id}>
-              <span>
-                Repeat breeding enabled · next jobs spend the same gold and
-                threads
-              </span>
-              <button
-                className="secondary small"
-                onClick={() =>
+        ))}
+      </div>
+      {tab === "Hatchery" && (
+        <Section title="Hatchery" label="SMALL BEGINNINGS">
+          <div className="button-row">
+            <label className="switch">
+              <input
+                type="checkbox"
+                disabled={s.facilities.Hatchery < 2}
+                checked={s.autoHatch}
+                onChange={() =>
                   act((s) => {
-                    s.breedingPlans!.find((p) => p.id === plan.id)!.enabled =
-                      false;
+                    s.autoHatch = !s.autoHatch;
                   })
                 }
-              >
-                Stop repeating
-              </button>
-            </div>
-          ))}
-        {s.breeding.map((b) => (
-          <div className="panel breeding-job" key={b.id}>
-            <Heart size={22} />
-            <div>
-              <strong>
-                {b.parents
-                  .map((id) => {
-                    const c = s.creatures.find((c) => c.id === id);
-                    return c ? cname(c) : "Parent";
+              />
+              Auto-hatch (Lv 2)
+            </label>
+            <label className="switch">
+              <input
+                type="checkbox"
+                disabled={s.facilities.Hatchery < 4}
+                checked={s.autoLoad}
+                onChange={() =>
+                  act((s) => {
+                    s.autoLoad = !s.autoLoad;
                   })
-                  .join(" × ")}
-              </strong>
-              <p>{timer(b.finish - now)} until egg completion</p>
-            </div>
+                }
+              />
+              Auto-load (Lv 4)
+            </label>
+            <select
+              aria-label="Egg selection policy"
+              disabled={s.facilities.Hatchery < 6}
+              value={s.hatchPolicy}
+              onChange={(e) =>
+                act((s) => {
+                  s.hatchPolicy = e.target.value;
+                })
+              }
+            >
+              <option value="oldest">Oldest egg</option>
+              <option value="perfect">Highest total IV</option>
+              <option value="rare">Rare variants first</option>
+              {FAMILIES.map((f) => (
+                <option value={"family:" + f.id} key={f.id}>
+                  {f.names[0]} only
+                </option>
+              ))}
+            </select>
           </div>
-        ))}
-        <details className="panel">
-          <summary>Discoverable cross-family pairings</summary>
-          <p className="muted">
-            These pairings have a 30% chance to produce a rare existing family.
-            Other results follow the parents’ families.
-          </p>
-          {HYBRIDS.map((h) => (
-            <p key={h.join("")}>
-              {FAMILY[h[0]].names[0]} × {FAMILY[h[1]].names[0]} →{" "}
-              {s.discovered.some((d) => d.startsWith(h[2]))
-                ? FAMILY[h[2]].names[0]
-                : "Undiscovered family"}
-            </p>
-          ))}
-        </details>
-      </Section>
-      <Section title="Build a better home" label="FACILITY UPGRADES">
-        <div className="facility-grid">
-          {FACILITIES.map((k) => {
-            const up = s.upgrades.find((u) => u.facility === k);
-            return (
-              <div className="panel facility" key={k}>
-                <div className="facility-top">
-                  <House size={24} />
-                  <span className="tag">LEVEL {s.facilities[k]}</span>
+          <div className="incubator-grid">
+            {s.incubators.map((inc, i) => (
+              <div
+                className={`panel incubator ${inc.egg && inc.finish <= now ? "ready" : ""}`}
+                key={inc.id}
+              >
+                <div className="eyebrow">
+                  INCUBATOR {String(i + 1).padStart(2, "0")}
+                </div>
+                <div className="incubator-egg">
+                  {inc.egg ? (
+                    <>
+                      <Sigil family={inc.egg.family} size="lg" />
+                      <EggIcon size={26} />
+                    </>
+                  ) : (
+                    <EggIcon size={64} />
+                  )}
                 </div>
                 <h3>
-                  {k === "Breeding"
-                    ? "Breeding Complex"
-                    : k === "Housing"
-                      ? "Housing Complex"
-                      : k}
+                  {inc.egg
+                    ? FAMILY[inc.egg.family].names[0] + " egg"
+                    : "A warm space, waiting."}
                 </h3>
-                <p>{FACILITY_INFO[k]}</p>
-                <Cost s={s} cost={E.facilityCost(s, k)} />
+                {inc.egg ? (
+                  <>
+                    <p>
+                      {inc.finish <= now
+                        ? "Ready to meet the world."
+                        : timer(inc.finish - now) + " remaining"}
+                    </p>
+                    <Progress
+                      value={
+                        1 -
+                        Math.max(0, inc.finish - now) /
+                          (3600000 / (1 + 0.15 * (s.facilities.Hatchery - 1)))
+                      }
+                    />
+                    <button
+                      disabled={inc.finish > now}
+                      onClick={() => act((s) => E.hatch(s, inc.id))}
+                    >
+                      Hatch companion
+                    </button>
+                  </>
+                ) : (
+                  <select
+                    aria-label={`Load incubator ${i + 1}`}
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value)
+                        act((s) => E.loadEgg(s, inc.id, e.target.value));
+                    }}
+                  >
+                    <option value="">Select an egg ({s.eggs.length})</option>
+                    {s.eggs.map((e) => (
+                      <option value={e.id} key={e.id}>
+                        {FAMILY[e.family].names[0]} · {e.source}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            ))}
+            <div className="panel incubator build-incubator">
+              <Plus size={36} />
+              <h3>Another new beginning</h3>
+              <p>Incubators run independently.</p>
+              <Cost s={s} cost={E.incubatorCost(s)} />
+              <button
+                className="secondary"
+                onClick={() => act(E.buildIncubator)}
+              >
+                Build incubator
+              </button>
+            </div>
+          </div>
+        </Section>
+      )}
+      {tab === "Breeding" && (
+        <Section title="Breeding complex" label="THE NEXT GENERATION">
+          <div className="panel">
+            <div className="two-col">
+              <div>
+                <label>
+                  Female parent
+                  <select
+                    value={mother}
+                    onChange={(e) => setMother(e.target.value)}
+                  >
+                    <option value="">Choose a female</option>
+                    {s.creatures
+                      .filter((c) => c.gender === "F" && E.free(s, c))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {cname(c)} · {Object.values(c.ivs).join("/")}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                {inheritance("mother")}
+              </div>
+              <div>
+                <label>
+                  Male parent
+                  <select
+                    value={father}
+                    onChange={(e) => setFather(e.target.value)}
+                  >
+                    <option value="">Choose a male</option>
+                    {s.creatures
+                      .filter((c) => c.gender === "M" && E.free(s, c))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {cname(c)} · {Object.values(c.ivs).join("/")}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                {inheritance("father")}
+              </div>
+            </div>
+            <p className="muted tiny">
+              75 gold · Base 30 minutes. Parents are reserved until completion.
+              Two Legacy Threads inherit six non-overlapping IVs. Facilities do
+              not change variant odds.
+            </p>
+            <BreedingOdds s={s} mother={mother} father={father} />
+            <label className="switch">
+              <input
+                type="checkbox"
+                disabled={s.facilities.Breeding < 4}
+                checked={repeatBreed}
+                onChange={(e) => setRepeatBreed(e.target.checked)}
+              />
+              Repeat pair while ingredients are available (Breeding Lv 4)
+            </label>
+            <button
+              onClick={() =>
+                confirm(
+                  "Start breeding?",
+                  "This spends 75 gold and selected threads now, and reserves both parents until the egg is produced.",
+                  () =>
+                    act((s) =>
+                      (repeatBreed ? E.repeatBreeding : E.breed)(
+                        s,
+                        mother,
+                        father,
+                        mc,
+                        fc,
+                        ms,
+                        fs,
+                      ),
+                    ),
+                )
+              }
+            >
+              Start breeding pair
+            </button>
+          </div>
+          {(s.breedingPlans || [])
+            .filter((p) => p.enabled)
+            .map((plan) => (
+              <div className="panel rule-row" key={plan.id}>
+                <span>
+                  Repeat breeding enabled · next jobs spend the same gold and
+                  threads
+                </span>
                 <button
-                  className="secondary"
-                  disabled={!!up}
+                  className="secondary small"
                   onClick={() =>
-                    confirm(
-                      `Upgrade ${k}?`,
-                      "Spend the listed materials to begin construction. The upgrade takes effect when its timer completes.",
-                      () => act((s) => E.upgradeFacility(s, k)),
-                    )
+                    act((s) => {
+                      s.breedingPlans!.find((p) => p.id === plan.id)!.enabled =
+                        false;
+                    })
                   }
                 >
-                  {up
-                    ? `Building · ${timer(up.finish - now)}`
-                    : `Upgrade to level ${s.facilities[k] + 1}`}
+                  Stop repeating
                 </button>
               </div>
-            );
-          })}
-        </div>
-      </Section>
+            ))}
+          {s.breeding.map((b) => (
+            <div className="panel breeding-job" key={b.id}>
+              <Heart size={22} />
+              <div>
+                <strong>
+                  {b.parents
+                    .map((id) => {
+                      const c = s.creatures.find((c) => c.id === id);
+                      return c ? cname(c) : "Parent";
+                    })
+                    .join(" × ")}
+                </strong>
+                <p>{timer(b.finish - now)} until egg completion</p>
+              </div>
+            </div>
+          ))}
+          <details className="panel">
+            <summary>Discoverable cross-family pairings</summary>
+            <p className="muted">
+              These pairings have a 30% chance to produce a rare existing
+              family. Other results follow the parents’ families.
+            </p>
+            {HYBRIDS.map((h) => (
+              <p key={h.join("")}>
+                {FAMILY[h[0]].names[0]} × {FAMILY[h[1]].names[0]} →{" "}
+                {s.discovered.some((d) => d.startsWith(h[2]))
+                  ? FAMILY[h[2]].names[0]
+                  : "Undiscovered family"}
+              </p>
+            ))}
+          </details>
+        </Section>
+      )}
+      {tab === "Buildings" && (
+        <Section title="Build a better home" label="FACILITY UPGRADES">
+          <div className="facility-grid">
+            {FACILITIES.map((k) => {
+              const up = s.upgrades.find((u) => u.facility === k);
+              return (
+                <div className="panel facility" key={k}>
+                  <div className="facility-top">
+                    <House size={24} />
+                    <span className="tag">LEVEL {s.facilities[k]}</span>
+                  </div>
+                  <h3>
+                    {k === "Breeding"
+                      ? "Breeding Complex"
+                      : k === "Housing"
+                        ? "Housing Complex"
+                        : k}
+                  </h3>
+                  <p>{FACILITY_INFO[k]}</p>
+                  <Cost s={s} cost={E.facilityCost(s, k)} />
+                  <button
+                    className="secondary"
+                    disabled={!!up}
+                    onClick={() =>
+                      confirm(
+                        `Upgrade ${k}?`,
+                        "Spend the listed materials to begin construction. The upgrade takes effect when its timer completes.",
+                        () => act((s) => E.upgradeFacility(s, k)),
+                      )
+                    }
+                  >
+                    {up
+                      ? `Building · ${timer(up.finish - now)}`
+                      : `Upgrade to level ${s.facilities[k] + 1}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
     </>
   );
 }

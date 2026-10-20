@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 — 19 October 2026
+
+- Replace oversized navigation and setup screens with one-tap destinations, contextual Home guidance, direct hatch/hunt actions and crew editors.
+- Rebuild combat around a compact six-versus-six arena with bidirectional elemental projectiles, trails, impacts, damage/healing numbers, ability captions, shields and real action/cooldown indicators. Respect reduced-motion settings.
+- Add actual per-victory drop rates, family-weighted eggs, rarity probabilities, guaranteed rewards and distinct dungeon/raid completion tables. Show Foraging egg odds and selected-parent breeding probabilities. Reward resolution and rate displays share their definitions; no drop balance changes.
+- Replace equipment cards with searchable compact rows and a unified item detail sheet. Focus Farm, Collection, Slayer and Shop around clear next actions.
+- Preserve schema-1 saves, individual identities and all 150 painted forms. Verify 59 UI checks, including mobile widths, real projectiles, functional item controls and live loot tables.
+
+
 ## 1.0.0 — 19 October 2026
 
 - Add all 150 approved painted form illustrations, isolated atlas viewports, enlarged encyclopedia inspectors, nine appearance combinations and a companion illustration on Home. Cache the full roster for offline play.

@@ -1,6 +1,6 @@
 # Creature Adventure
 
-Release **1.0.0**. A mobile-first, single-player creature collector using the owner's `creaturerpg` Firebase project. All calculations run on-device; Firebase handles authentication and cloud snapshots. No Blaze plan, Cloud Functions, paid backend, or billing setup.
+Release **1.1.0 — UI and Combat Overhaul**. A mobile-first, single-player creature collector using the owner's `creaturerpg` Firebase project. All calculations run on-device; Firebase handles authentication and cloud snapshots. No Blaze plan, Cloud Functions, paid backend, or billing setup.
 
 The package contains the playable compiled game, complete TypeScript source, all 150 painted forms, configuration files and actual test reports. Production account setup is still required in the owner’s existing Firebase/GitHub projects; no live deployment or real-account verification is claimed.
 
@@ -41,8 +41,13 @@ Server timestamps provide a connected clock anchor where rules permit it. Guest 
 ## Playing
 
 - Choose Cindlet, Burlit, or Droplet. Your first egg takes 30 seconds; later eggs share a 60-minute base incubation duration.
-- Hatch at Farm. The first creature enters the first combat slot.
-- Select a wild encounter. The opening list favors your first companion's elemental advantage.
+- Home shows one clear **Next step**. Hatch directly there; your first creature enters the combat team.
+- The five bottom buttons open Home, Combat, Creatures, Skills and Farm. Equipment, Slayer, Collection, Shop and Settings are one tap away in the top shortcut bar.
+- Use **Edit team** beside a crew to change its members. **Fill empty slots** uses only available reserve creatures.
+- Combat has focused Battle, Hunts, Dungeons and Raids tabs. Elemental projectiles, impacts, floating numbers, action bars and ability captions follow real combat events.
+- Tap **Drop rates** on a battle or encounter to see actual per-victory egg/equipment odds, family chances, rarity odds and guaranteed rewards. Dungeon and raid completion rewards are separate from encounter loot. Foraging shows egg chance per cycle; Breeding shows the selected parents’ inheritance odds.
+- Farm has Hatchery, Breeding and Buildings tabs. Equipment uses compact rows: tap one to equip, upgrade or inspect it. Shop separates Supplies, Slayer and Materials.
+- Tap **Start hunt** on Home or select a wild encounter under Combat → Hunts. The opening list favors your first companion's elemental advantage.
 - Claim **Into the wilds** in the Home journal or Collection → Journal for a second egg.
 - Assign a separate creature to Skills. Combat and one skilling activity can operate together.
 - The first boss unlocks breeding, equipment upgrades, and Slayer. Evolution is manual at levels 25 and 75, with materials and boss requirements.
@@ -52,7 +57,7 @@ Server timestamps provide a connected clock anchor where rules permit it. Guest 
 
 ## Development
 
-Root source modules: model.ts, content.ts, engine.ts, persistence.ts, app.tsx, main.tsx, styles.css, simulator-worker.ts. Deterministic engine functions do not depend on React or Firebase.
+Root source modules: model.ts, content.ts, engine.ts, persistence.ts, app.tsx, interface.tsx, portraits.tsx, main.tsx, styles.css, interface.css, simulator-worker.ts. Deterministic engine functions do not depend on React or Firebase.
 
 With Node available: `npm ci`, `npm test`, `npm run balance`, `npm run build`. These are developer commands, not required to play or deploy the delivered static files from a phone.
 

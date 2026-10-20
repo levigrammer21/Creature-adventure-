@@ -1,22 +1,22 @@
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
-> creature-adventure@1.0.0 build
+> creature-adventure@1.1.0 build
 > tsc --noEmit && vite build && node package-build.mjs
 
 vite v7.3.7 building client environment for production...
 transforming...
-✓ 1604 modules transformed.
+✓ 1607 modules transformed.
 rendering chunks...
 computing gzip size...
 dist/index.source.html               0.82 kB │ gzip:   0.43 kB
-dist/simulator-worker-DlrPHciw.js   67.72 kB
-dist/index-CNvfLfoM.css             43.37 kB │ gzip:  10.43 kB
-dist/index.source-CILkeo3a.js      213.91 kB │ gzip:  66.90 kB
-dist/react-CezsJlgN.js             221.81 kB │ gzip:  69.00 kB
+dist/simulator-worker-8xW9d02f.js   68.55 kB
+dist/index-BWJBajR4.css             75.85 kB │ gzip:  17.00 kB
+dist/react-HuhBA_gG.js             221.83 kB │ gzip:  69.02 kB
+dist/index.source-BXP5Uaph.js      242.11 kB │ gzip:  75.52 kB
 dist/firebase-BzChfMFp.js          560.87 kB │ gzip: 167.01 kB
 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 3.50s
+✓ built in 3.29s

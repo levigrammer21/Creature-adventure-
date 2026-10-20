@@ -1,6 +1,6 @@
 {
   "name": "creature-adventure",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "test": "vitest run --maxWorkers=1",
     "balance": "node --import tsx balance.ts",
     "preview": "vite preview --host 0.0.0.0",
-    "browser": "node --import tsx browser-check.mjs",
+    "browser": "node --import tsx ui-check.mjs",
     "rules": "firebase emulators:exec --only firestore --project demo-creature-adventure --config firebase-emulator.json \"npm test\"",
     "release:check": "node --import tsx release-check.ts",
     "progression": "node --import tsx progression-check.ts",

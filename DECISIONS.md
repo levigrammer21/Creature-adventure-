@@ -21,3 +21,7 @@
 - Refined alloys feed facility levels 5 onward and Gem/Trinket attempts beyond +10, progressing through all five alloy recipes. Slayer milestone steps permanently improve new contract gold/XP by 5% and token rewards by 10% per milestone.
 - Automatic cloud checkpoint spacing scales with page count, targeting conservative write traffic for personal free-plan play. Manual cloud saves remain available; quota failures retain local progress.
 - Development schema-1 saves migrate without resets/rerolls. Duplicate discovered forms are normalized; normal appearance records are removed from the rare-variant encyclopedia list while individual creatures remain unchanged.
+
+- Version 1.1 keeps schema 1 and all progression. The overhaul changes navigation and presentation, not reward balance. All destinations have direct navigation; advanced settings are grouped behind focused tabs or expandable details.
+- Projectile visuals are driven by actual combat events, with short visual HP delay to align impacts; shared online/offline simulation remains authoritative. Both game and operating-system reduced-motion preferences suppress animated travel.
+- Drop odds are shown per victorious encounter, with conditional rarity separately labeled. Egg-family weights include duplicate families in encounter definitions. Completion rewards are distinguished from encounter loot. Inheritance odds are shown for the selected parents without exposing undiscovered hybrid names.

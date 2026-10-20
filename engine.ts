@@ -560,6 +560,25 @@ export function applyLoadout(s: Save, lid: string, skillOnly = false) {
   if (!skillOnly) s.combatTeam = [...l.combat];
   s.skillTeam = [...l.skill];
 }
+export const HYBRID_CHANCE = 0.3;
+export function breedingFamilyChances(m: Creature, f: Creature) {
+  const out: Record<string, number> = {};
+  if (m.family === f.family) out[m.family] = 1;
+  else {
+    out[m.family] = 0.5;
+    out[f.family] = 0.5;
+  }
+  const hybrid = HYBRIDS.find(
+    (h) =>
+      (h[0] === m.family && h[1] === f.family) ||
+      (h[1] === m.family && h[0] === f.family),
+  );
+  if (hybrid) {
+    for (const family in out) out[family] *= 1 - HYBRID_CHANCE;
+    out[hybrid[2]] = (out[hybrid[2]] || 0) + HYBRID_CHANCE;
+  }
+  return Object.entries(out).map(([family, chance]) => ({ family, chance }));
+}
 export function breed(
   s: Save,
   motherId: string,
@@ -641,7 +660,7 @@ export function breed(
       (h[0] === m.family && h[1] === f.family) ||
       (h[1] === m.family && h[0] === f.family),
   );
-  if (cross && rand(s) < 0.3) family = cross[2];
+  if (cross && rand(s) < HYBRID_CHANCE) family = cross[2];
   const e = egg(s, family, "Breeding", [m, f]);
   for (const k of ms) e.ivs[k] = m.ivs[k];
   for (const k of fs) e.ivs[k] = f.ivs[k];
@@ -658,6 +677,14 @@ export function breed(
     `${FAMILY[m.family].names[m.stage - 1]} × ${FAMILY[f.family].names[f.stage - 1]} · parents reserved.`,
   );
 }
+export const EQUIPMENT_RARITY_THRESHOLDS = [
+  0.52, 0.79, 0.93, 0.982, 0.998, 1,
+] as const;
+export const equipmentRarityChances = () =>
+  EQUIPMENT_RARITY_THRESHOLDS.map(
+    (v, i) => v - (i ? EQUIPMENT_RARITY_THRESHOLDS[i - 1] : 0),
+  );
+
 export function rollItem(
   s: Save,
   tier = 0,
@@ -666,18 +693,7 @@ export function rollItem(
 ): Item {
   const r = rand(s);
   const rare =
-    rarity ??
-    (r < 0.52
-      ? 0
-      : r < 0.79
-        ? 1
-        : r < 0.93
-          ? 2
-          : r < 0.982
-            ? 3
-            : r < 0.998
-              ? 4
-              : 5);
+    rarity ?? EQUIPMENT_RARITY_THRESHOLDS.findIndex((cutoff) => r < cutoff);
   const type = slot ?? pick(s, ["Essence", "Gem", "Trinket"] as Slot[]);
   const keys =
     type === "Essence"
@@ -957,25 +973,7 @@ function completeSkill(s: Save) {
   s.metrics.mastery25 = Object.values(s.mastery).filter(
     (v) => v.level >= 25,
   ).length;
-  if (
-    a.skill === "Foraging" &&
-    rand(s) <
-      0.002 *
-        (1 + a.tier * 0.12) *
-        (1 +
-          Math.min(0.4, (master.level - 1) / (master.level + 99)) +
-          s.skillTeam.reduce((v, id) => {
-            const c = s.creatures.find((c) => c.id === id);
-            return (
-              v +
-              (c
-                ? bonus(s, c, "luck")
-                    .div(bonus(s, c, "luck").add(100))
-                    .toNumber() * 0.05
-                : 0)
-            );
-          }, 0))
-  ) {
+  if (a.skill === "Foraging" && rand(s) < foragingEggChance(s, a.id)) {
     const families = FAMILIES.filter((f) => f.region <= Math.min(9, a.tier));
     s.eggs.push(egg(s, pick(s, families).id, "Foraging"));
     metric(s, "eggs");
@@ -1495,6 +1493,8 @@ function act(s: Save, u: CombatUnit) {
       );
     });
     if (!useful) continue;
+    event(s, u, u, "ability", 0);
+    s.combat!.events.at(-1)!.label = a.name;
     for (const effect of a.effects)
       doEffect(s, u, effect, 1 + (u.stage - index - 1) * 0.18);
     u.cd[index] = s.time + a.cooldown * 1000;
@@ -1623,10 +1623,75 @@ export function stopCombat(s: Save) {
   if (s.combat) log(s, "combat", "Combat run ended. Earned rewards retained.");
   s.combat = null;
 }
+/** The display and award resolver share these probabilities. No RNG is consumed. */
+export function encounterDrops(s: Save, eid: string) {
+  const en = ENCOUNTER[eid];
+  if (!en) throw Error("Unknown encounter.");
+  const cs = s.creatures.filter((c) => s.combatTeam.includes(c.id));
+  const luck = cs.reduce(
+    (v, c) =>
+      v +
+      bonus(s, c, "luck")
+        .div(bonus(s, c, "luck").add(100))
+        .toNumber() *
+        0.04,
+    0,
+  );
+  const eggs = Math.min(0.5, 0.035 * en.lootScale * (1 + luck));
+  const gear = Math.min(0.85, 0.12 * en.lootScale * (1 + luck));
+  return {
+    eggs,
+    gear,
+    luck,
+    gold: Math.floor((4 + en.level * 2) * en.lootScale),
+    creatureXP: (12 + en.level * 6) * en.lootScale,
+    materials: Array.from({ length: 4 }, (_, k) => ({
+      id: `g${k}-${Math.min(11, en.region)}`,
+      min: Math.floor(en.lootScale) + 1,
+      max: Math.ceil(3 * en.lootScale),
+      chance: 1,
+    })),
+    families: [...new Set(en.families)].map((family) => ({
+      family,
+      chance:
+        (eggs * en.families.filter((id) => id === family).length) /
+        en.families.length,
+    })),
+    rarities: equipmentRarityChances().map((conditional, rarity) => ({
+      rarity,
+      conditional,
+      chance: gear * conditional,
+    })),
+    catalyst: en.kind === "boss" ? 1 : 0,
+    relic: en.kind === "boss" ? 0.4 : 0,
+  };
+}
+export function foragingEggChance(s: Save, aid: string) {
+  const a = ACTIVITY[aid];
+  if (!a || a.skill !== "Foraging") return 0;
+  const master = s.mastery[aid]?.level || 1;
+  const luck = s.skillTeam.reduce((v, id) => {
+    const c = s.creatures.find((c) => c.id === id);
+    return (
+      v +
+      (c
+        ? bonus(s, c, "luck")
+            .div(bonus(s, c, "luck").add(100))
+            .toNumber() * 0.05
+        : 0)
+    );
+  }, 0);
+  return (
+    0.002 *
+    (1 + a.tier * 0.12) *
+    (1 + Math.min(0.4, (master - 1) / (master + 99)) + luck)
+  );
+}
 function reward(s: Save) {
   const b = s.combat!,
     en = ENCOUNTER[b.encounter];
-  const xp = (12 + en.level * 6) * en.lootScale;
+  const drops = encounterDrops(s, en.id);
+  const xp = drops.creatureXP;
   const cs = s.combatTeam
     .map((id) => s.creatures.find((c) => c.id === id))
     .filter(Boolean) as Creature[];
@@ -1638,7 +1703,7 @@ function reward(s: Save) {
         .mul(c.effect === "Sparkling" ? 1.05 : 1)
         .mul(D(1).add(bonus(s, c, "xp").div(bonus(s, c, "xp").add(100)))),
     );
-  resource(s, "gold", Math.floor((4 + en.level * 2) * en.lootScale));
+  resource(s, "gold", drops.gold);
   for (let k = 0; k < 4; k++)
     resource(
       s,
@@ -1646,26 +1711,16 @@ function reward(s: Save) {
       Math.ceil((1 + rand(s) * 2) * en.lootScale),
     );
   resource(s, `trophy-${en.region}`, 1);
-  const luck = cs.reduce(
-    (v, c) =>
-      v +
-      bonus(s, c, "luck")
-        .div(bonus(s, c, "luck").add(100))
-        .toNumber() *
-        0.04,
-    0,
-  );
-  if (rand(s) < Math.min(0.5, 0.035 * en.lootScale * (1 + luck))) {
+  if (rand(s) < drops.eggs) {
     const family = pick(s, en.families);
     s.eggs.push(egg(s, family, en.name));
     metric(s, "eggs");
     log(s, "rare", `${FAMILY[family].names[0]} egg found.`);
   }
-  if (rand(s) < Math.min(0.85, 0.12 * en.lootScale * (1 + luck)))
-    receiveItem(s, rollItem(s, en.region));
+  if (rand(s) < drops.gear) receiveItem(s, rollItem(s, en.region));
   if (en.kind === "boss") {
     resource(s, "catalyst", 1);
-    if (rand(s) < 0.4) resource(s, "relic", 1);
+    if (rand(s) < drops.relic) resource(s, "relic", 1);
     if (!s.unlocks.includes(en.id)) {
       s.unlocks.push(en.id);
       log(s, "unlock", `${en.name} defeated · next region unlocked.`);

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19T20:38:58.731Z",
+  "timestamp": "2026-10-19T22:39:52.642Z",
   "checks": [
     {
       "name": "compiled bundles load under repository subpath",

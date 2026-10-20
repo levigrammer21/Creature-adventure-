@@ -1,28 +1,32 @@
-# Build and verification report — 1.0.0
+# Build and verification report — 1.1.0
 
 Date: 19 October 2026. Evidence below comes from actual local runs. Automated browser/gameplay fixtures are isolated from player saves. No real player account was created, no production Firebase rules or providers were changed, and no paid service was enabled.
 
 | Verification | Actual result | Evidence |
 |---|---|---|
 | Strict TypeScript + production build | Passed; app, React, Firebase, worker, CSS, PWA and artwork packaged | BUILD-OUTPUT.txt, TYPECHECK-OUTPUT.txt |
-| Engine, persistence, art and Firestore rules | **42 passed** in the local Firestore emulator | RULES-TEST-OUTPUT.txt |
-| Ordinary unit command | **39 passed; 3 emulator tests skipped**, as intended without the emulator | UNIT-TEST-OUTPUT.txt |
-| Main browser walkthrough | **39 passed** | BROWSER-REPORT.json |
+| Engine, persistence, art and Firestore rules | **47 passed** in the local Firestore emulator | RULES-TEST-OUTPUT.txt |
+| Ordinary unit command | **44 passed; 3 emulator tests skipped**, as intended without the emulator | UNIT-TEST-OUTPUT.txt |
+| Main browser walkthrough | **59 passed** | UI-REPORT.json / BROWSER-REPORT.json |
 | Full art/encyclopedia walkthrough | **13 passed**, including every one of the 150 enlarged inspectors and all nine variant classes | ART-BROWSER-REPORT.json |
-| Packaged installed PWA | **8 passed**, including repository subpath, service-worker control, offline reload, retained save, visible 1.0.0 and all ten atlases offline | PACKAGED-REPORT.json |
+| Packaged installed PWA | **8 passed**, including repository subpath, service-worker control, offline reload, retained save, visible 1.1.0 and all ten atlases offline | PACKAGED-REPORT.json |
 | All evolution paths | **100 edges passed**, all 150 forms recorded; identity/genetics/level/gear retained | RELEASE-REPORT.json |
 | Dungeon/raid completion and resume | **24 seeded successful runs** across all five dungeons and three raids; serialized mid-run return equals uninterrupted settlement | RELEASE-REPORT.json |
 | Earned progression | **168 simulated hours**, no injected levels/currency: 17 owned families, seven evolutions, five regions opened, level 166 highest, 94,888 victories, 182,129 skill cycles | PROGRESSION-REPORT.json |
 | Seeded balance/probability checks | 100 trials per starter; all 50 family substitutions; ten boss trials; 100,000 rarity rolls; variant/upgrade probabilities | BALANCE-REPORT.json |
 | Large inventory | 50,000 items; 1,000 stat evaluations around 53ms; 49,999-item bulk salvage around 1.21s, equipped item retained | PERFORMANCE-REPORT.json |
 
+The balance, 168-hour earned progression and large-inventory benchmarks were recorded for 1.0 and are retained as historical evidence. Version 1.1 does not alter their progression or reward formulas. Evolution/adventure regression, rules/unit, art, interface and packaged-PWA checks were rerun for this release.
+
 ## What the tests exercise
 
 The engine suite covers roster/reference counts, all staged stat calculations, exact elemental interactions, deterministic RNG, independent variant sampling, distinct rarity affixes, upgrade success floor and failure behavior, original salvage value, permanent milestones, complementary IV inheritance, locked/favorite/assigned protections, manual evolution identity, duplicate discovery handling, XP conservation, real recipe ingredients/outputs, queues and workflows, same-event production fallback, breeding repetition, individual AND/OR IV thresholds, Slayer turn-in, online/partitioned settlement, defeat cutoff and offline windows.
 
+Five loot regressions verify weighted family drops, assigned gear luck, rarity mass, no RNG mutation while inspecting rates, Foraging chance, actual ability labels and breeding outcome probabilities.
+
 The rules suite rejects anonymous and cross-owner access, stale revisions and mutation of immutable snapshot pages. A large Unicode account round-trips through multiple pages; two concurrent writers cannot both publish the same expected revision. Conflicting rewards are not merged. Development saves migrate without rerolling individuals or silently resetting progress.
 
-The main browser run covers starter choice/hatch, live combat, refresh recovery, 320/390/768/1280 layouts, all principal destinations, ability priority controls, second-tab read-only behavior and preserved checkpoints after closing the second tab. The art run pages every encyclopedia entry, opens every form inspector, checks stats/aptitudes, decodes the corresponding PNGs and exercises all nine appearance combinations. The package run uses the compiled output under `/Creature-adventure-/` and explicitly fetches every atlas after going offline.
+The 1.1 UI browser run covers the direct starter hatch/hunt path, live combat and refresh recovery, 320/390/768/1280 layouts, every destination one tap away, bidirectional moving projectiles, ability feed, live/boss/dungeon/raid loot panels, direct crew editing, Foraging odds, focused Farm tabs, actual equipment detail/lock controls, Slayer next actions and Escape dismissal. The 1.0 historical walkthrough separately exercised priority editing and second-tab locking. The art run pages every encyclopedia entry, opens every form inspector, checks stats/aptitudes, decodes the corresponding PNGs and exercises all nine appearance combinations. The package run uses the compiled output under `/Creature-adventure-/` and explicitly fetches every atlas after going offline.
 
 ## Corrections driven by verification and integration review
 

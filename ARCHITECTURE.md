@@ -10,7 +10,9 @@ React 19 and TypeScript provide the mobile interface; Vite prepares flat static 
 | persistence.ts | Existing-project Firebase auth, IndexedDB, bounded immutable Firestore pages, transactions, clock anchor and migrations |
 | simulator-worker.ts | Return settlement using the same engine off the UI thread |
 | art.ts + img | Every form's original painted raster and independent native SVG viewport/clips |
-| app.tsx + styles.css | Navigation, live game panels, creature/form inspection, teams, workflows and account controls |
+| app.tsx + styles.css | Save lifecycle, navigation, creature/form inspection, workflows and account controls |
+| interface.tsx + interface.css | Compact dashboard, direct crew editors, event-driven battle effects, encounter/drop sheets, Skills, Equipment and Slayer |
+| portraits.tsx | Shared painted-art renderer and independent color/effect variant treatments |
 | package-build.mjs | Static packaging, recursive art cache, PWA manifest and source/compiled delivery |
 
 Each individual retains a stable ID. Eggs carry their pre-generated IVs, gender and independent appearance axes. A save stores live combat unit timers/cooldowns/statuses, dungeon node, reserved skill cycle ingredients, incubators, breeding jobs, upgrades, workflows, loadouts and collection records. Refreshing resumes those exact objects; offline settlement advances their scheduled events rather than multiplying a reward rate.
@@ -20,3 +22,5 @@ The owner explicitly chose free Spark-plan Firebase and browser-computed gamepla
 Schema 1 remains compatible with development saves. Migration updates version metadata and removes duplicate collection entries without rerolling creatures, eggs, equipment or active jobs. Unsupported/corrupt saves produce an error while preserving their original checkpoint. Guest and account timelines remain separate. A writer lock prevents multiple tabs from advancing the same local save.
 
 Randomness is deterministic per save through one RNG interface. Decimal scientific values carry uncapped gameplay statistics/resources; probabilities saturate and costs grow. There is no designed level/mastery/equipment/facility ceiling. Finite numerical representation is a technical boundary, not an imposed progression cap.
+
+Combat event labels are optional schema-compatible presentation metadata. The arena animates actual source/target events without changing simulation timing or RNG. Drop sheets use engine encounterDrops and equipmentRarityChances, also consumed by reward resolution. Foraging and breeding odds use the same formula helpers as their outcome resolvers.
