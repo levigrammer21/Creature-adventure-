@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 — 20 October 2026
+
+- Make the farm the visible home: warm paper/sage styling, a tappable homestead scene, resident creatures, nursery, pasture and work areas. Keep the improved combat arena and projectiles.
+- Stack stored eggs by family without merging hidden identities or rerolling genetics. Add one-tap load/fill nests and hatch-ready controls.
+- Reduce ordinary incubation from sixty to five minutes. Migrate in-flight ordinary eggs to one twelfth of their remaining time once; preserve ready and starter eggs.
+- Add parallel farm work: three areas initially, up to eight through Workshop upgrades, each with an independent one-to-six-creature crew. Share real inventory, XP/mastery, recipe reservation and chronological offline simulation. Keep legacy activity, queues, workflows and loadouts as area 1.
+- Fix the offline cap at twelve hours for all activities and timers. Expedition levels now improve combat XP toward +50% with diminishing returns.
+- Add a once-only welcome basket containing Pebbit/Sporel eggs and a second nest if needed. Preserve existing saves, combat, collection and cloud accounts.
+
+
 ## 1.1.0 — 19 October 2026
 
 - Replace oversized navigation and setup screens with one-tap destinations, contextual Home guidance, direct hatch/hunt actions and crew editors.

@@ -86,6 +86,8 @@ import {
   TeamDrawer,
 } from "./interface";
 import "./interface.css";
+import { FarmHome, Nursery, WorkBoard } from "./farm";
+import "./farm.css";
 import {
   watchAuth,
   google,
@@ -635,7 +637,8 @@ export default function App() {
     { s, act } = game;
   const [page, setPage] = useState("Home"),
     [teamEditor, setTeamEditor] = useState<"combat" | "skill" | null>(null),
-    [farmTab, setFarmTab] = useState("Hatchery"),
+    [farmTab, setFarmTab] = useState("Overview"),
+    [workFocus, setWorkFocus] = useState<string | undefined>(undefined),
     [shopTab, setShopTab] = useState("Supplies"),
     [detail, setDetail] = useState<string | null>(null),
     [formPreview, setFormPreview] = useState<string | null>(null),
@@ -701,8 +704,10 @@ export default function App() {
   const go = (name: string) => {
     const [destination, section] = name.split(":");
     setPage(destination);
-    if (destination === "Farm" && section) setFarmTab(section);
+    if (destination === "Farm") setFarmTab(section || "Overview");
+    if (destination === "Skills") setWorkFocus(section);
     if (destination === "Shop" && section) setShopTab(section);
+    if (destination === "Collection" && section) setCollectionFilter(section);
     setQuery("");
     window.scrollTo({ top: 0 });
   };
@@ -763,8 +768,8 @@ export default function App() {
     const f = FAMILY[creature.family],
       assigned = s.combatTeam.includes(creature.id)
         ? "Combat"
-        : s.skillTeam.includes(creature.id)
-          ? "Skilling"
+        : E.farmWorkers(s).includes(creature.id)
+          ? "Farm work"
           : s.breeding.some((b) => b.parents.includes(creature.id))
             ? "Breeding"
             : creature.recoveryUntil > now
@@ -912,9 +917,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        {s.started && page !== "Home" && page !== "Combat" && (
-          <ActivityStrip s={s} go={go} />
-        )}
+        {s.started &&
+          page !== "Home" &&
+          page !== "Combat" &&
+          page !== "Farm" && <ActivityStrip s={s} go={go} />}
         {game.error && (
           <div className="notice danger" role="alert">
             <p>{game.error}</p>
@@ -977,19 +983,19 @@ export default function App() {
                 ? "MAKE A HOME. BUILD A LEGACY."
                 : "CREATURE ADVENTURE"}
             </div>
-            <h1>{page === "Home" ? "Your sanctuary" : page}</h1>
+            <h1>{page === "Home" ? "Your farm" : page}</h1>
             <p>
               {
                 (
                   {
-                    Home: "Your active teams, ready eggs and next step.",
+                    Home: "A cozy home. A few helping hands. Something growing every day.",
                     Combat:
                       "Your team fights automatically. Choose a hunt or watch the battle.",
                     Creatures:
                       "Tap a companion to inspect it. Edit either team directly.",
                     Skills:
-                      "Choose one activity. Your work crew runs it automatically.",
-                    Farm: "Hatch eggs, breed companions and upgrade your buildings.",
+                      "Give your companions different jobs. Their work builds your farm.",
+                    Farm: "Grow your homestead, care for companions and plan the next upgrade.",
                     Equipment:
                       "Tap an item to equip, compare or upgrade. Select spares to salvage.",
                     Slayer: "One contract. A worthy hunt.",
@@ -1040,15 +1046,7 @@ export default function App() {
             </section>
           ) : (
             <>
-              {page === "Home" && (
-                <Dashboard
-                  s={s}
-                  act={act}
-                  go={go}
-                  onTeam={setTeamEditor}
-                  onDetail={setDetail}
-                />
-              )}
+              {page === "Home" && <FarmHome s={s} act={act} go={go} />}
               {page === "Combat" && (
                 <CombatScreen
                   s={s}
@@ -1069,7 +1067,7 @@ export default function App() {
                     </button>
                     <button
                       className="secondary small"
-                      onClick={() => setTeamEditor("skill")}
+                      onClick={() => go("Skills")}
                     >
                       Work crew
                     </button>
@@ -1202,11 +1200,11 @@ export default function App() {
                 </>
               )}
               {page === "Skills" && (
-                <SkillsScreen
+                <WorkBoard
                   s={s}
                   act={act}
-                  onTeam={() => setTeamEditor("skill")}
                   go={go}
+                  focus={workFocus}
                   onWorkflow={() => setWorkflows(true)}
                 />
               )}
@@ -1216,6 +1214,7 @@ export default function App() {
                   act={act}
                   now={now}
                   confirm={confirm}
+                  go={go}
                   tab={farmTab}
                   setTab={setFarmTab}
                 />
@@ -1565,13 +1564,13 @@ export default function App() {
                         />
                       </label>
                       <p>
-                        Offline earning window: {E.offlineCap(s) / 3600000}{" "}
+                        Offline progression cap: {E.offlineCap(s) / 3600000}{" "}
                         hours
                       </p>
                       <p className="muted tiny">
-                        Eggs, breeding, facility upgrades, and recovery use
-                        elapsed time. Combat and skill earnings use your
-                        unlocked offline window.
+                        All progress stops after 12 offline hours, including
+                        combat, farm tasks, incubation, breeding, upgrades and
+                        recovery. No facility extends this cap.
                       </p>
                     </div>
                   </div>
@@ -2350,8 +2349,10 @@ function Farm({
   confirm,
   tab,
   setTab,
+  go,
 }: {
   s: Save;
+  go: (page: string) => void;
   act: Act;
   tab: string;
   setTab: (tab: string) => void;
@@ -2436,7 +2437,7 @@ function Farm({
         <House size={64} />
       </div>
       <div className="segmented" aria-label="Farm sections">
-        {["Hatchery", "Breeding", "Buildings"].map((t) => (
+        {["Overview", "Hatchery", "Breeding", "Buildings"].map((t) => (
           <button
             key={t}
             className={tab === t ? "active" : ""}
@@ -2446,134 +2447,8 @@ function Farm({
           </button>
         ))}
       </div>
-      {tab === "Hatchery" && (
-        <Section title="Hatchery" label="SMALL BEGINNINGS">
-          <div className="button-row">
-            <label className="switch">
-              <input
-                type="checkbox"
-                disabled={s.facilities.Hatchery < 2}
-                checked={s.autoHatch}
-                onChange={() =>
-                  act((s) => {
-                    s.autoHatch = !s.autoHatch;
-                  })
-                }
-              />
-              Auto-hatch (Lv 2)
-            </label>
-            <label className="switch">
-              <input
-                type="checkbox"
-                disabled={s.facilities.Hatchery < 4}
-                checked={s.autoLoad}
-                onChange={() =>
-                  act((s) => {
-                    s.autoLoad = !s.autoLoad;
-                  })
-                }
-              />
-              Auto-load (Lv 4)
-            </label>
-            <select
-              aria-label="Egg selection policy"
-              disabled={s.facilities.Hatchery < 6}
-              value={s.hatchPolicy}
-              onChange={(e) =>
-                act((s) => {
-                  s.hatchPolicy = e.target.value;
-                })
-              }
-            >
-              <option value="oldest">Oldest egg</option>
-              <option value="perfect">Highest total IV</option>
-              <option value="rare">Rare variants first</option>
-              {FAMILIES.map((f) => (
-                <option value={"family:" + f.id} key={f.id}>
-                  {f.names[0]} only
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="incubator-grid">
-            {s.incubators.map((inc, i) => (
-              <div
-                className={`panel incubator ${inc.egg && inc.finish <= now ? "ready" : ""}`}
-                key={inc.id}
-              >
-                <div className="eyebrow">
-                  INCUBATOR {String(i + 1).padStart(2, "0")}
-                </div>
-                <div className="incubator-egg">
-                  {inc.egg ? (
-                    <>
-                      <Sigil family={inc.egg.family} size="lg" />
-                      <EggIcon size={26} />
-                    </>
-                  ) : (
-                    <EggIcon size={64} />
-                  )}
-                </div>
-                <h3>
-                  {inc.egg
-                    ? FAMILY[inc.egg.family].names[0] + " egg"
-                    : "A warm space, waiting."}
-                </h3>
-                {inc.egg ? (
-                  <>
-                    <p>
-                      {inc.finish <= now
-                        ? "Ready to meet the world."
-                        : timer(inc.finish - now) + " remaining"}
-                    </p>
-                    <Progress
-                      value={
-                        1 -
-                        Math.max(0, inc.finish - now) /
-                          (3600000 / (1 + 0.15 * (s.facilities.Hatchery - 1)))
-                      }
-                    />
-                    <button
-                      disabled={inc.finish > now}
-                      onClick={() => act((s) => E.hatch(s, inc.id))}
-                    >
-                      Hatch companion
-                    </button>
-                  </>
-                ) : (
-                  <select
-                    aria-label={`Load incubator ${i + 1}`}
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value)
-                        act((s) => E.loadEgg(s, inc.id, e.target.value));
-                    }}
-                  >
-                    <option value="">Select an egg ({s.eggs.length})</option>
-                    {s.eggs.map((e) => (
-                      <option value={e.id} key={e.id}>
-                        {FAMILY[e.family].names[0]} · {e.source}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            ))}
-            <div className="panel incubator build-incubator">
-              <Plus size={36} />
-              <h3>Another new beginning</h3>
-              <p>Incubators run independently.</p>
-              <Cost s={s} cost={E.incubatorCost(s)} />
-              <button
-                className="secondary"
-                onClick={() => act(E.buildIncubator)}
-              >
-                Build incubator
-              </button>
-            </div>
-          </div>
-        </Section>
-      )}
+      {tab === "Overview" && <FarmHome s={s} act={act} go={go} />}
+      {tab === "Hatchery" && <Nursery s={s} act={act} />}
       {tab === "Breeding" && (
         <Section title="Breeding complex" label="THE NEXT GENERATION">
           <div className="panel">

@@ -1202,8 +1202,9 @@ export const FACILITY_INFO: Record<string, string> = {
     "One pair per level; progressively faster breeding. Lv 4 unlocks repeat pairs.",
   Recovery: "Faster recovery, with a positive minimum duration.",
   Workshop:
-    "Lv 2 loadouts and queues; Lv 4 auto-salvage; Lv 6 workflows; Lv 8 loadout switching.",
-  Expedition: "Expands the offline earning window from 24 to at most 72 hours.",
+    "Three parallel work stations at Lv 1; one more per level up to eight. Lv 2 loadouts; Lv 3 queues; Lv 4 auto-salvage; Lv 6 workflows; Lv 8 loadout switching.",
+  Expedition:
+    "Expedition Lodge improves combat XP with diminishing returns, toward +50%. Offline progression always stops after 12 hours.",
 };
 export const AFFIX_NAMES: Record<string, string> = {
   hp: "Maximum HP",

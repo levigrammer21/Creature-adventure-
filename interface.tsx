@@ -118,10 +118,12 @@ export function ActivityStrip({
         <span>
           <small>WORK</small>
           <strong>
-            {s.skillJob ? ACTIVITY[s.skillJob.activity].name : "No active work"}
+            {E.workStations(s).filter((j) => j.job).length
+              ? `${E.workStations(s).filter((j) => j.job).length} farm tasks`
+              : "Farm resting"}
           </strong>
         </span>
-        <i className={s.skillJob ? "running" : ""} />
+        <i className={E.workStations(s).some((j) => j.job) ? "running" : ""} />
       </button>
       <button onClick={() => go("Farm:Hatchery")}>
         <EggIcon size={15} />
@@ -586,14 +588,14 @@ export function TeamDrawer({
             .map((c) => {
               const own = ids.includes(c.id),
                 breeding = s.breeding.some((b) => b.parents.includes(c.id)),
-                working = s.skillTeam.includes(c.id),
+                working = E.farmWorkers(s).includes(c.id),
                 fighting = s.combatTeam.includes(c.id),
                 recovering = c.recoveryUntil > s.time;
               const blocked =
                 active ||
                 breeding ||
                 recovering ||
-                (team === "combat" && working && !!s.skillJob) ||
+                (team === "combat" && working) ||
                 (team === "skill" && fighting && !!s.combat);
               return (
                 <div className="assignment-row" key={c.id}>

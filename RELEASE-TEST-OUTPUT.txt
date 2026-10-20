@@ -1,5 +1,10 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> creature-adventure@1.2.0 release:check
+> node --import tsx release-check.ts
+
 {
-  "timestamp": "2026-10-19T22:33:07.623Z",
+  "timestamp": "2026-10-20T03:16:58.893Z",
   "adventures": [
     {
       "id": "dungeon-0",

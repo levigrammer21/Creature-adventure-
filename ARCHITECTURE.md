@@ -12,6 +12,7 @@ React 19 and TypeScript provide the mobile interface; Vite prepares flat static 
 | art.ts + img | Every form's original painted raster and independent native SVG viewport/clips |
 | app.tsx + styles.css | Save lifecycle, navigation, creature/form inspection, workflows and account controls |
 | interface.tsx + interface.css | Compact dashboard, direct crew editors, event-driven battle effects, encounter/drop sheets, Skills, Equipment and Slayer |
+| farm.tsx + farm.css | Interactive cozy homestead, stack-based nursery and independent farm work board |
 | portraits.tsx | Shared painted-art renderer and independent color/effect variant treatments |
 | package-build.mjs | Static packaging, recursive art cache, PWA manifest and source/compiled delivery |
 
@@ -24,3 +25,5 @@ Schema 1 remains compatible with development saves. Migration updates version me
 Randomness is deterministic per save through one RNG interface. Decimal scientific values carry uncapped gameplay statistics/resources; probabilities saturate and costs grow. There is no designed level/mastery/equipment/facility ceiling. Finite numerical representation is a technical boundary, not an imposed progression cap.
 
 Combat event labels are optional schema-compatible presentation metadata. The arena animates actual source/target events without changing simulation timing or RNG. Drop sheets use engine encounterDrops and equipmentRarityChances, also consumed by reward resolution. Foraging and breeding odds use the same formula helpers as their outcome resolvers.
+
+Version 1.2 adds optional farmJobs/farmRevision fields to schema 1. The legacy skillTeam/activity/skillJob remains area 1, with additional areas persisting their own crew/activity/reserved cycle. A synchronous scoped context reuses the same skill resolver and always restores legacy fields in finally. The global event queue considers every area deadline in fixed index order; simultaneous recipes cannot spend the same ingredients. Migration validates worker exclusivity and copies in-flight egg records before shortening their remaining incubation. All pending clocks freeze beyond the fixed twelve-hour offline window.

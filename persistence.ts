@@ -26,7 +26,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { Save, STATS, SKILLS, VERSION } from "./model";
-import { FAMILY } from "./content";
+import { FAMILY, ACTIVITY } from "./content";
 import { newSave } from "./engine";
 const app = initializeApp({
   apiKey: "AIzaSyCeA0YC2ME_PbSixHjfs5nUfHZO6pLqCME",
@@ -104,11 +104,44 @@ export function migrate(value: unknown): Save {
     throw Error(
       "Invalid team or progression data. Original checkpoint preserved.",
     );
+  const farmJobs = s.farmJobs || [];
+  const workers = [...s.skillTeam, ...farmJobs.flatMap((j) => j.team || [])];
+  if (
+    farmJobs.length > 7 ||
+    farmJobs.some(
+      (j) =>
+        !Array.isArray(j.team) ||
+        j.team.length > 6 ||
+        (j.activity && !ACTIVITY[j.activity]) ||
+        (j.job &&
+          (!ACTIVITY[j.job.activity] || !Number.isFinite(j.job.finish))),
+    ) ||
+    new Set(workers).size !== workers.length ||
+    workers.some(
+      (id) =>
+        !s.creatures.some((c) => c.id === id) ||
+        s.combatTeam.includes(id) ||
+        s.breeding.some((b) => b.parents.includes(id)),
+    )
+  )
+    throw Error("Invalid farm assignments. Original checkpoint preserved.");
+  const incubators = s.incubators.map((inc) =>
+    !s.farmRevision &&
+    inc.egg &&
+    inc.finish > s.time &&
+    inc.egg.source !== "Starter"
+      ? { ...inc, finish: s.time + (inc.finish - s.time) / 12 }
+      : inc,
+  );
   // Version 1 uses the original schema; migrate metadata without recreating any
   // creature, egg, random roll, or active job from development checkpoints.
   return {
     ...s,
     version: VERSION,
+    farmJobs,
+    farmRevision: 1,
+    incubators,
+    settings: { ...s.settings, offlineHours: 12 },
     discovered: [...new Set(s.discovered)],
     variants: [
       ...new Set(s.variants.filter((v) => !v.endsWith("-Normal-Normal"))),

@@ -1,48 +1,48 @@
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
-> creature-adventure@1.1.0 rules
+> creature-adventure@1.2.0 rules
 > firebase emulators:exec --only firestore --project demo-creature-adventure --config firebase-emulator.json "npm test"
 
 ⬢  emulators: firebase-tools will drop support for Java version < 21 soon in firebase-tools@15. Please install a JDK at version 21 or above to get a compatible runtime.
 i  emulators: Starting emulators: firestore
 i  emulators: Detected demo project ID "demo-creature-adventure", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
-i  firestore: downloading cloud-firestore-emulator-v1.19.8.jar...
-
 i  firestore: Firestore Emulator logging to firestore-debug.log
 ✔  firestore: Firestore Emulator UI websocket is running on 9150.
 i  Running script: npm test
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
-> creature-adventure@1.1.0 test
+> creature-adventure@1.2.0 test
 > vitest run --maxWorkers=1
 
 
  RUN  v3.2.7 /workspace/scratch/3b8102b303b2/creature-adventure
 
- ✓ engine.test.ts (34 tests) 535ms
- ✓ art.test.ts (1 test) 114ms
- ✓ loot.test.ts (5 tests) 15ms
- ✓ persistence.test.ts (4 tests) 7ms
 stderr | rules.test.ts > Firestore ownership and revision rules > rejects unsigned and cross-account reads/writes
-[2026-10-19T22:33:53.097Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6b7202aa error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-20T03:16:53.891Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4b2c6639 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L19, false for 'create' @ L28, false for 'update' @ L25, false for 'update' @ L28
 
 stderr | rules.test.ts > Firestore ownership and revision rules > permits only increasing committed revisions and immutable snapshots
-[2026-10-19T22:33:53.164Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6b7202ab error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-20T03:16:53.972Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4b2c663a error. Code: 7 Message: 7 PERMISSION_DENIED: 
 evaluation error at L8:24 for 'update' @ L8, false for 'update' @ L28, false for 'update' @ L8, false for 'update' @ L28
 
 stderr | rules.test.ts > Firestore ownership and revision rules > permits only increasing committed revisions and immutable snapshots
-[2026-10-19T22:33:53.205Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6b7202ac error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-20T03:16:54.039Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4b2c663b error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'update' @ L25, false for 'update' @ L28
 
- ✓ rules.test.ts (3 tests) 1938ms
-   ✓ Firestore ownership and revision rules > rejects unsigned and cross-account reads/writes  471ms
-   ✓ Firestore ownership and revision rules > round-trips a partitioned account and rejects a stale device without duplicate rewards  649ms
+ ✓ rules.test.ts (3 tests) 2278ms
+   ✓ Firestore ownership and revision rules > rejects unsigned and cross-account reads/writes  590ms
+   ✓ Firestore ownership and revision rules > round-trips a partitioned account and rejects a stale device without duplicate rewards  713ms
+ ✓ engine.test.ts (34 tests) 505ms
+ ✓ farm.test.ts (10 tests) 345ms
+   ✓ caps every offline clock at twelve hours even with expedition upgrades  306ms
+ ✓ art.test.ts (1 test) 135ms
+ ✓ loot.test.ts (5 tests) 14ms
+ ✓ persistence.test.ts (4 tests) 6ms
 
- Test Files  5 passed (5)
-      Tests  47 passed (47)
-   Start at  17:33:49
-   Duration  3.90s (transform 185ms, setup 0ms, collect 501ms, tests 2.61s, environment 1ms, prepare 240ms)
+ Test Files  6 passed (6)
+      Tests  57 passed (57)
+   Start at  22:16:52
+   Duration  4.90s (transform 199ms, setup 0ms, collect 653ms, tests 3.28s, environment 1ms, prepare 304ms)
 
 ✔  Script exited successfully (code 0)
 i  emulators: Shutting down emulators.

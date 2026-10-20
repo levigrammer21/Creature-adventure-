@@ -1,6 +1,6 @@
 # Creature Adventure
 
-Release **1.1.0 — UI and Combat Overhaul**. A mobile-first, single-player creature collector using the owner's `creaturerpg` Firebase project. All calculations run on-device; Firebase handles authentication and cloud snapshots. No Blaze plan, Cloud Functions, paid backend, or billing setup.
+Release **1.2.0 — Cozy Farm**. A mobile-first, single-player creature collector using the owner's `creaturerpg` Firebase project. All calculations run on-device; Firebase handles authentication and cloud snapshots. No Blaze plan, Cloud Functions, paid backend, or billing setup.
 
 The package contains the playable compiled game, complete TypeScript source, all 150 painted forms, configuration files and actual test reports. Production account setup is still required in the owner’s existing Firebase/GitHub projects; no live deployment or real-account verification is claimed.
 
@@ -40,24 +40,32 @@ Server timestamps provide a connected clock anchor where rules permit it. Guest 
 
 ## Playing
 
-- Choose Cindlet, Burlit, or Droplet. Your first egg takes 30 seconds; later eggs share a 60-minute base incubation duration.
-- Home shows one clear **Next step**. Hatch directly there; your first creature enters the combat team.
+- Choose Cindlet, Burlit, or Droplet. Your first egg takes 30 seconds; later eggs share a five-minute base incubation duration.
+- Home is your visible farm: visit the nursery, pasture and work areas directly. Hatch your first companion there, then open the once-only welcome basket for Pebbit/Sporel helper eggs and a second nest if needed.
 - The five bottom buttons open Home, Combat, Creatures, Skills and Farm. Equipment, Slayer, Collection, Shop and Settings are one tap away in the top shortcut bar.
-- Use **Edit team** beside a crew to change its members. **Fill empty slots** uses only available reserve creatures.
+- Use **Combat team** edits your battle formation. Skills is now a farm work board: each work area has its own task and one to six helpers. Start with three parallel tasks; each Workshop level adds one up to eight. A creature keeps one assignment.
 - Combat has focused Battle, Hunts, Dungeons and Raids tabs. Elemental projectiles, impacts, floating numbers, action bars and ability captions follow real combat events.
 - Tap **Drop rates** on a battle or encounter to see actual per-victory egg/equipment odds, family chances, rarity odds and guaranteed rewards. Dungeon and raid completion rewards are separate from encounter loot. Foraging shows egg chance per cycle; Breeding shows the selected parents’ inheritance odds.
-- Farm has Hatchery, Breeding and Buildings tabs. Equipment uses compact rows: tap one to equip, upgrade or inspect it. Shop separates Supplies, Slayer and Materials.
+- Farm has Overview, Hatchery, Breeding and Buildings tabs. Equipment uses compact rows: tap one to equip, upgrade or inspect it. Shop separates Supplies, Slayer and Materials.
 - Tap **Start hunt** on Home or select a wild encounter under Combat → Hunts. The opening list favors your first companion's elemental advantage.
 - Claim **Into the wilds** in the Home journal or Collection → Journal for a second egg.
-- Assign a separate creature to Skills. Combat and one skilling activity can operate together.
+- Give free creatures different farm jobs. Gathering and production share your materials and can run alongside combat. Ingredients reserve at cycle start; pause finishes that cycle before helpers can move. Production stops if supplies run out.
 - The first boss unlocks breeding, equipment upgrades, and Slayer. Evolution is manual at levels 25 and 75, with materials and boss requirements.
 - Pause skilling and let the reserved cycle finish before changing its crew. Stop combat before changing its formation or equipment.
 - Facility descriptions show automation milestones. Rule previews exclude protected creatures/equipment. Review destructive actions carefully.
 - Defeat stops combat. The team recovers automatically, and a retry resumes the saved encounter when requested. Earned rewards remain.
 
+## Farm and offline progression
+
+Egg storage groups by family, such as **Cindlet egg ×34**. Individual eggs retain their IDs, sources, genetics and variant rolls; oldest matching eggs load first. Fill empty nests and hatch all ready eggs in one action. Ordinary incubation is five minutes before upgrades. Existing in-flight ordinary eggs receive one twelfth of their former remaining time exactly once when migrating. Ready eggs and the 30-second starter retain their deadlines.
+
+All offline progress has a fixed **12-hour cap**: combat, farm tasks, automation, incubation, breeding, facility work and recovery. Pending timers freeze after those 12 hours and resume on return. Expedition no longer increases the window; its existing levels now improve combat XP with diminishing returns toward +50%.
+
+Work area 1 preserves the old crew, queue, workflows and loadouts. Additional work areas persist independently and use the same chronological resolver. No active creature is borrowed from another task, combat or breeding.
+
 ## Development
 
-Root source modules: model.ts, content.ts, engine.ts, persistence.ts, app.tsx, interface.tsx, portraits.tsx, main.tsx, styles.css, interface.css, simulator-worker.ts. Deterministic engine functions do not depend on React or Firebase.
+Root source modules: model.ts, content.ts, engine.ts, persistence.ts, app.tsx, interface.tsx, farm.tsx, portraits.tsx, main.tsx, styles.css, interface.css, farm.css, simulator-worker.ts. Deterministic engine functions do not depend on React or Firebase.
 
 With Node available: `npm ci`, `npm test`, `npm run balance`, `npm run build`. These are developer commands, not required to play or deploy the delivered static files from a phone.
 

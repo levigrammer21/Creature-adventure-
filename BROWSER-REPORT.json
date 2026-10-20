@@ -1,16 +1,20 @@
 {
-  "timestamp": "2026-10-19T22:37:12.503Z",
+  "timestamp": "2026-10-20T03:18:47.761Z",
   "checks": [
     {
-      "name": "next-step guidance explains starter incubation",
+      "name": "farm explains starter incubation",
       "passed": true
     },
     {
-      "name": "first hatch works directly from dashboard",
+      "name": "first hatch works directly from farm",
       "passed": true
     },
     {
-      "name": "dashboard starts a hunt and opens live battle in one tap",
+      "name": "welcome basket creates helpers and second nest",
+      "passed": true
+    },
+    {
+      "name": "farm adventures open real combat",
       "passed": true
     },
     {
@@ -22,7 +26,7 @@
       "passed": true
     },
     {
-      "name": "dashboard lists combat, work and eggs together",
+      "name": "home centers the visible farm and its working residents",
       "passed": true
     },
     {
@@ -154,7 +158,19 @@
       "passed": true
     },
     {
+      "name": "a second farm task starts without stopping the first",
+      "passed": true
+    },
+    {
+      "name": "parallel tasks persist through refresh",
+      "passed": true
+    },
+    {
       "name": "foraging exposes its real egg discovery chance",
+      "passed": true
+    },
+    {
+      "name": "focused Farm tab Overview works",
       "passed": true
     },
     {
@@ -167,6 +183,14 @@
     },
     {
       "name": "focused Farm tab Buildings works",
+      "passed": true
+    },
+    {
+      "name": "34 identical eggs appear as one family stack",
+      "passed": true
+    },
+    {
+      "name": "loading a stack decrements it by one and warms a nest",
       "passed": true
     },
     {

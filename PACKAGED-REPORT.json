@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19T22:39:52.642Z",
+  "timestamp": "2026-10-20T03:21:18.468Z",
   "checks": [
     {
       "name": "compiled bundles load under repository subpath",
@@ -22,7 +22,7 @@
       "passed": true
     },
     {
-      "name": "painted portraits replace development symbols",
+      "name": "nursery painted previews remain available offline",
       "passed": true
     },
     {

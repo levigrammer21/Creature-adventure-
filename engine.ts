@@ -232,6 +232,8 @@ export function newSave(seed = Date.now() >>> 0, now = Date.now()): Save {
     items: [],
     combatTeam: Array(6).fill(null),
     skillTeam: [],
+    farmJobs: [],
+    farmRevision: 1,
     loadouts: [],
     skills: levels,
     mastery: {},
@@ -257,7 +259,7 @@ export function newSave(seed = Date.now() >>> 0, now = Date.now()): Save {
     autoLoad: false,
     logs: [],
     metrics: { serial: 0 },
-    settings: { sound: false, motion: true, offlineHours: 24 },
+    settings: { sound: false, motion: true, offlineHours: 12 },
     summary: null,
   };
 }
@@ -266,7 +268,7 @@ export const unlockedRegion = (s: Save, r: number) =>
   r === 0 || s.unlocks.includes(`boss-${r - 1}`);
 export const free = (s: Save, c: Creature) =>
   !s.combatTeam.includes(c.id) &&
-  !s.skillTeam.includes(c.id) &&
+  !farmWorkers(s).includes(c.id) &&
   !s.breeding.some((j) => j.parents.includes(c.id)) &&
   c.recoveryUntil <= s.time;
 export function starter(s: Save, family: string) {
@@ -337,6 +339,48 @@ export function hatch(s: Save, incId: string) {
   )
     release(s, [c.id], true);
 }
+export const incubationDuration = (s: Save) =>
+  300000 / (1 + 0.15 * (s.facilities.Hatchery - 1));
+/** Family stacks are presentation only: original eggs and their genetics stay separate. */
+export function eggStacks(s: Save) {
+  const groups = new Map<
+    string,
+    { family: string; count: number; first: string }
+  >();
+  for (const e of s.eggs) {
+    const group = groups.get(e.family);
+    if (group) group.count++;
+    else groups.set(e.family, { family: e.family, count: 1, first: e.id });
+  }
+  return [...groups.values()].sort((a, b) =>
+    FAMILY[a.family].names[0].localeCompare(FAMILY[b.family].names[0]),
+  );
+}
+export function loadEggFamily(s: Save, family: string, all = false) {
+  const eggs = s.eggs
+    .filter((e) => e.family === family)
+    .sort((a, b) => a.created - b.created);
+  const empty = s.incubators.filter((i) => !i.egg);
+  if (!eggs.length || !empty.length)
+    throw Error("No empty nests or matching eggs.");
+  for (let n = 0; n < Math.min(eggs.length, all ? empty.length : 1); n++)
+    loadEgg(s, empty[n].id, eggs[n].id);
+}
+export function welcomeFarm(s: Save) {
+  if (!s.creatures.length || s.claims.includes("farm-welcome"))
+    throw Error(
+      "Welcome basket already claimed or first companion not hatched.",
+    );
+  s.claims.push("farm-welcome");
+  s.eggs.push(egg(s, "E01", "Farm welcome"), egg(s, "N02", "Farm welcome"));
+  if (s.incubators.length < 2)
+    s.incubators.push({ id: id(s, "inc"), egg: null, finish: 0 });
+  log(
+    s,
+    "farm",
+    "Welcome basket: Pebbit and Sporel eggs, with a second nest if needed.",
+  );
+}
 export function loadEgg(s: Save, incId: string, eggId: string) {
   const inc = s.incubators.find((i) => i.id === incId),
     index = s.eggs.findIndex((e) => e.id === eggId);
@@ -344,7 +388,7 @@ export function loadEgg(s: Save, incId: string, eggId: string) {
     throw Error("Choose an empty incubator and available egg.");
   inc.egg = s.eggs.splice(index, 1)[0];
   inc.notified = false;
-  inc.finish = s.time + 3600000 / (1 + 0.15 * (s.facilities.Hatchery - 1));
+  inc.finish = s.time + incubationDuration(s);
   log(s, "incubation", `${FAMILY[inc.egg.family].names[0]} egg loaded.`);
 }
 export function incubatorCost(s: Save) {
@@ -516,6 +560,8 @@ export function assign(
     throw Error(
       "Pause skilling and finish the reserved cycle before editing its team.",
     );
+  if ((s.farmJobs || []).some((j) => j.team.includes(cid)))
+    throw Error("Unassign this creature from its farm task first.");
   s.combatTeam = s.combatTeam.map((x) => (x === cid ? null : x));
   s.skillTeam = s.skillTeam.filter((x) => x !== cid);
   if (team === "combat") {
@@ -553,7 +599,8 @@ export function applyLoadout(s: Save, lid: string, skillOnly = false) {
       !c ||
       c.recoveryUntil > s.time ||
       s.breeding.some((j) => j.parents.includes(cid)) ||
-      (skillOnly && s.combatTeam.includes(cid))
+      (skillOnly && s.combatTeam.includes(cid)) ||
+      (s.farmJobs || []).some((j) => j.team.includes(cid))
     )
       throw Error("A loadout creature is unavailable.");
   }
@@ -853,6 +900,97 @@ export function equip(s: Save, cid: string, iid: string) {
   c.equipment[i.slot] = iid;
   metric(s, "equips");
 }
+/** Existing skilling is station zero; additional stations share its tested resolver. */
+export const farmStationCount = (s: Save) =>
+  Math.min(8, 2 + s.facilities.Workshop);
+export const farmWorkers = (s: Save) => [
+  ...s.skillTeam,
+  ...(s.farmJobs || []).flatMap((j) => j.team),
+];
+export function workStations(s: Save) {
+  return Array.from({ length: farmStationCount(s) }, (_, i) =>
+    i === 0
+      ? { team: s.skillTeam, activity: s.activity, job: s.skillJob }
+      : s.farmJobs?.[i - 1] || { team: [], activity: null, job: null },
+  );
+}
+export function stationView(s: Save, index: number): Save {
+  const post = workStations(s)[index];
+  return {
+    ...s,
+    skillTeam: post?.team || [],
+    activity: post?.activity || null,
+    skillJob: post?.job || null,
+  };
+}
+function withFarmStation<T>(s: Save, index: number, fn: (view: Save) => T): T {
+  if (index === 0) return fn(s);
+  if (!Number.isInteger(index) || index < 1 || index >= farmStationCount(s))
+    throw Error("Upgrade the Workshop to open this work station.");
+  s.farmJobs ??= [];
+  while (s.farmJobs.length < index)
+    s.farmJobs.push({ team: [], activity: null, job: null });
+  const post = s.farmJobs[index - 1],
+    original = {
+      skillTeam: s.skillTeam,
+      skillJob: s.skillJob,
+      activity: s.activity,
+      queue: s.queue,
+      workflow: s.workflow,
+    };
+  s.skillTeam = post.team;
+  s.skillJob = post.job;
+  s.activity = post.activity;
+  s.queue = [];
+  s.workflow = null;
+  try {
+    return fn(s);
+  } finally {
+    post.team = s.skillTeam;
+    post.job = s.skillJob;
+    post.activity = s.activity;
+    Object.assign(s, original);
+  }
+}
+export function assignFarm(s: Save, index: number, cid: string) {
+  const post = workStations(s)[index];
+  if (!post) throw Error("Work station unavailable.");
+  if (post.job)
+    throw Error("Pause and finish the reserved cycle before changing workers.");
+  if (post.team.includes(cid)) {
+    withFarmStation(s, index, (v) => {
+      v.skillTeam = v.skillTeam.filter((id) => id !== cid);
+      if (!v.skillTeam.length) v.activity = null;
+    });
+    return;
+  }
+  const c = s.creatures.find((c) => c.id === cid);
+  if (!c || !free(s, c))
+    throw Error(
+      "Choose a free creature. Combat, other jobs and breeding keep their workers.",
+    );
+  if (post.team.length >= 6) throw Error("Six workers maximum per task.");
+  withFarmStation(s, index, (v) => {
+    v.skillTeam.push(cid);
+  });
+}
+export function startFarmTask(s: Save, index: number, aid: string) {
+  withFarmStation(s, index, (v) => startSkill(v, aid));
+  log(s, "farm", `Work station ${index + 1} started ${ACTIVITY[aid].name}.`);
+}
+export function pauseFarmTask(s: Save, index: number) {
+  withFarmStation(s, index, (v) => {
+    pauseSkill(v);
+    if (index === 0) {
+      v.queue = [];
+      if (v.workflow) v.workflow.enabled = false;
+    }
+  });
+}
+export function farmTaskDuration(s: Save, index: number, aid: string) {
+  return activityDuration(stationView(s, index), aid);
+}
+
 export function teamBonus(s: Save, skill: Skill) {
   const cs = s.skillTeam
     .map((id) => s.creatures.find((c) => c.id === id))
@@ -1644,7 +1782,11 @@ export function encounterDrops(s: Save, eid: string) {
     gear,
     luck,
     gold: Math.floor((4 + en.level * 2) * en.lootScale),
-    creatureXP: (12 + en.level * 6) * en.lootScale,
+    creatureXP:
+      (12 + en.level * 6) *
+      en.lootScale *
+      (1 +
+        ((s.facilities.Expedition - 1) / (s.facilities.Expedition + 19)) * 0.5),
     materials: Array.from({ length: 4 }, (_, k) => ({
       id: `g${k}-${Math.min(11, en.region)}`,
       min: Math.floor(en.lootScale) + 1,
@@ -1966,6 +2108,8 @@ function automation(s: Save) {
         if (eggs.length) loadEgg(s, inc.id, eggs[0].id);
       }
   beginSkill(s);
+  for (let i = 1; i < farmStationCount(s); i++)
+    if (s.farmJobs?.[i - 1]?.activity) withFarmStation(s, i, beginSkill);
 }
 function nonEarningCompletions(s: Save) {
   for (const inc of s.incubators)
@@ -1999,7 +2143,7 @@ function nonEarningCompletions(s: Save) {
     }
 }
 export function offlineCap(s: Save) {
-  return Math.min(72, 24 + (s.facilities.Expedition - 1) * 6) * 3600000;
+  return 12 * 3600000;
 }
 function earnedXP(
   before: { level: number; xp: string },
@@ -2039,6 +2183,7 @@ export function advance(s: Save, target: number, offline = false) {
       end,
       nextCombat(s),
       s.skillJob?.finish || Infinity,
+      ...(s.farmJobs || []).map((j) => j.job?.finish || Infinity),
       ...s.breeding.map((b) => b.finish),
       ...s.upgrades.map((u) => u.finish),
       ...(s.autoHatch && s.creatures.length < capacity(s)
@@ -2051,6 +2196,9 @@ export function advance(s: Save, target: number, offline = false) {
     s.time = Math.max(s.time + 0.001, next);
     nonEarningCompletions(s);
     if (s.skillJob && s.skillJob.finish <= s.time) completeSkill(s);
+    for (let i = 1; i < farmStationCount(s); i++)
+      if (s.farmJobs?.[i - 1]?.job && s.farmJobs[i - 1].job!.finish <= s.time)
+        withFarmStation(s, i, completeSkill);
     combatStep(s);
     automation(s);
   }
@@ -2058,6 +2206,13 @@ export function advance(s: Save, target: number, offline = false) {
   if (target > end) {
     const skipped = target - end; // Pause earning clocks in excess of the earning window.
     if (s.skillJob) s.skillJob.finish += skipped;
+    for (const j of s.farmJobs || []) if (j.job) j.job.finish += skipped;
+    for (const i of s.incubators)
+      if (i.egg && i.finish > end) i.finish += skipped;
+    for (const j of s.breeding) j.finish += skipped;
+    for (const u of s.upgrades) u.finish += skipped;
+    for (const c of s.creatures)
+      if (c.recoveryUntil > end) c.recoveryUntil += skipped;
     if (s.combat) {
       s.combat.nextBattle = s.combat.nextBattle
         ? s.combat.nextBattle + skipped

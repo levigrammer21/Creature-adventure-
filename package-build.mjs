@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 const version = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
-if (fs.existsSync("img")) fs.cpSync("img", "dist/img", { recursive: true });
+if (fs.existsSync("img")) fs.cpSync("img", "dist/img", { recursive: true, filter: (source) => !path.basename(source).startsWith(".") });
 fs.renameSync("dist/index.source.html", "dist/index.html");
 fs.writeFileSync(
   "dist/manifest.webmanifest",
@@ -11,8 +11,8 @@ fs.writeFileSync(
     start_url: "./",
     scope: "./",
     display: "standalone",
-    background_color: "#10191a",
-    theme_color: "#101a20",
+    background_color: "#f4f0e5",
+    theme_color: "#f4f0e5",
     icons: [
       {
         src: "./icon.svg",

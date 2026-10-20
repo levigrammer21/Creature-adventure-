@@ -1,4 +1,4 @@
-export const VERSION = "1.1.0";
+export const VERSION = "1.2.0";
 export const ELEMENTS = ["Fire", "Nature", "Earth", "Storm", "Water"] as const;
 export type Element = (typeof ELEMENTS)[number];
 export const SKILLS = [
@@ -249,6 +249,12 @@ export interface Save {
   items: Item[];
   combatTeam: (string | null)[];
   skillTeam: string[];
+  farmJobs?: {
+    team: string[];
+    activity: string | null;
+    job: Save["skillJob"];
+  }[];
+  farmRevision?: number;
   loadouts: {
     id: string;
     name: string;

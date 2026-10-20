@@ -1,6 +1,6 @@
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
-> creature-adventure@1.1.0 packaged
+> creature-adventure@1.2.0 packaged
 > node --import tsx packaged-check.mjs
 
 [
@@ -25,7 +25,7 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
     "passed": true
   },
   {
-    "name": "painted portraits replace development symbols",
+    "name": "nursery painted previews remain available offline",
     "passed": true
   },
   {

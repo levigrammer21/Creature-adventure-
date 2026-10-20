@@ -397,7 +397,7 @@ describe("Chronological combat and offline progression", () => {
       expect(() => E.advance(s, s.time + 60000)).not.toThrow();
     }
   });
-  it("honors capped earnings but uncapped already-started incubation/breeding deadlines", () => {
+  it("caps all offline clocks at twelve hours", () => {
     const s = E.newSave(43, 1000),
       c = creature(s);
     s.combatTeam.fill(null);
@@ -410,8 +410,8 @@ describe("Chronological combat and offline progression", () => {
     };
     s.incubators.push(inc);
     E.advance(s, s.time + 48 * 3600000, true);
-    expect(s.summary!.simulated).toBe(24 * 3600000);
-    expect(inc.finish < s.time).toBe(true);
+    expect(s.summary!.simulated).toBe(12 * 3600000);
+    expect(inc.finish > s.time).toBe(true);
     expect(s.metrics.cycles).toBeLessThan(35000);
   });
   it("prevents duplicate journal rewards", () => {
